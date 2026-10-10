@@ -39,7 +39,7 @@ python -m flowsight.cli sim --scenario rush_hour --duration 1500        # simula
 python -m flowsight.cli eval --seeds 5 --duration 1800                  # accuracy report -> runs/eval/report.md
 python -m flowsight.cli calibrate --store <id> --camera <cam>           # click points -> homography
 python scripts/bench.py                                                 # -> docs/benchmarks.md
-make test                                                               # 46 tests
+make test                                                               # 45 tests
 ```
 
 Set `ANTHROPIC_API_KEY` to have the shift briefing written by Claude (model in `config/default.yaml`).
@@ -175,6 +175,6 @@ api/         FastAPI app + printable report template
 web/         React + Vite + TypeScript + Tailwind + ECharts console (7 pages)
 config/      default.yaml (all thresholds) + stores/*.yaml (cameras, calibration, zones, sim layout)
 scripts/     download_data.py, bench.py, tasks.py (make targets)
-tests/       46 pytest tests (perception, geometry, analytics acceptance, action rules, API, stretch features)
+tests/       45 pytest tests (perception, geometry, analytics acceptance, action rules, API, stretch features)
 docs/        screenshots, benchmarks, demo script
 ```
