@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FlowSight daily report — {{ run.store_id }}</title>
+<style>
+  :root { --ink:#16181d; --mute:#5b6270; --line:#dde1e7; --accent:#0e7c86; --crit:#c0392b; --high:#d35400; --med:#b7950b; --low:#5b6270; }
+  body { font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); margin: 32px auto; max-width: 980px; padding: 0 16px; }
+  h1 { font-size: 22px; margin: 0 } h2 { font-size: 15px; margin: 28px 0 8px; border-bottom: 2px solid var(--ink); padding-bottom: 4px }
+  .sub { color: var(--mute); margin-top: 4px }
+  .kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 16px }
+  .kpi { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px } .kpi b { display:block; font-size: 18px }
+  .kpi span { color: var(--mute); font-size: 11px; text-transform: uppercase; letter-spacing: .04em }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums } th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line) }
+  th { font-size: 11px; color: var(--mute); text-transform: uppercase; letter-spacing: .04em }
+  .sev { font-weight: 700; text-transform: uppercase; font-size: 11px } .critical{color:var(--crit)} .high{color:var(--high)} .medium{color:var(--med)} .low{color:var(--low)}
+  .badge { display:inline-block; padding: 1px 6px; border-radius: 10px; font-size: 11px; border: 1px solid var(--line) }
+  .imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px } .imgs img { width: 100%; border-radius: 4px } .imgs p { margin: 4px 0 0; color: var(--mute) }
+  ul.brief li { margin: 4px 0 }
+  .foot { color: var(--mute); margin-top: 32px; font-size: 11px }
+  @media print { body { margin: 0 } h2 { break-after: avoid } table, .imgs { break-inside: avoid } }
+</style>
+</head>
+<body>
+<h1>FlowSight — Daily Store Flow Report</h1>
+<div class="sub">Store <b>{{ run.store_id }}</b> · source {{ run.source }} · {{ fmt_dur(k.elapsed_s) }} analysed · generated {{ generated }} · privacy: anonymised trajectories only</div>
+
+<div class="kpis">
+  <div class="kpi"><span>Shoppers</span><b>{{ k.visitors_total }}</b></div>
+  <div class="kpi"><span>Peak in view</span><b>{{ k.peak_people }}</b></div>
+  <div class="kpi"><span>Avg zone dwell</span><b>{{ '%.0f' % k.avg_zone_dwell_s }}s</b></div>
+  <div class="kpi"><span>Checkout wait</span><b>{{ fmt_dur(k.checkout_wait_s) if k.checkout_wait_s is not none else '–' }}</b></div>
+  <div class="kpi"><span>Bottlenecks</span><b>{{ k.bottlenecks_total }}</b></div>
+  <div class="kpi"><span>Conversion</span><b>{{ ('%.0f%%' % (k.conversion*100)) if k.conversion is not none else '–' }}</b></div>
+</div>
+
+<h2>Shift briefing <span class="badge">{{ briefing.mode }}</span></h2>
+<ul class="brief">{% for b in briefing.bullets %}<li>{{ b }}</li>{% endfor %}</ul>
+
+<h2>Actions ({{ insights|length }})</h2>
+<table><tr><th>Severity</th><th>Horizon</th><th>Owner</th><th>Action</th><th>Expected impact</th><th>Status</th></tr>
+{% for i in insights %}<tr><td class="sev {{ i.severity }}">{{ i.severity }}</td><td>{{ i.horizon|replace('_',' ') }}</td><td>{{ i.owner|replace('_',' ') }}</td><td>{{ i.action }}</td><td>{{ i.expected_impact }}</td><td>{{ i.status }}</td></tr>{% endfor %}
+</table>
+
+<h2>Zones</h2>
+<table><tr><th>Zone</th><th>Type</th><th>Visits</th><th>Median dwell</th><th>P90 dwell</th><th>Exposures</th><th>Stopping power</th><th>Status</th></tr>
+{% for z in zones %}<tr><td>{{ z.name }}</td><td>{{ z.type }}</td><td>{{ z.visits }}</td><td>{{ '%.0f' % z.median_dwell_s }}s</td><td>{{ '%.0f' % z.p90_dwell_s }}s</td><td>{{ z.exposures }}</td><td>{{ ('%.0f%%' % (z.stopping_power*100)) if z.stopping_power is not none else '–' }}</td><td>{{ z.attention_status }}{% if z.bottleneck_active %} · BOTTLENECK{% endif %}</td></tr>{% endfor %}
+</table>
+
+<h2>Bottlenecks ({{ bottlenecks|length }})</h2>
+<table><tr><th>Zone</th><th>Start</th><th>Duration</th><th>Peak LoS</th><th>People</th><th>Time lost</th><th>Cause</th></tr>
+{% for b in bottlenecks %}<tr><td>{{ b.zone_name }}</td><td>{{ fmt_dur(b.t_start) }}</td><td>{{ fmt_dur(b.duration_s) }}</td><td>{{ b.peak_los }}</td><td>{{ b.people_affected }}</td><td>{{ '%.0f' % b.time_lost_s }}s</td><td>{{ b.reason }}</td></tr>{% endfor %}
+</table>
+
+<h2>Heatmaps (floor plan, person-seconds)</h2>
+<div class="imgs"><div><img src="{{ imgs.occupancy }}"><p>Occupancy — where people are</p></div><div><img src="{{ imgs.stationary }}"><p>Stationary — where people stop</p></div></div>
+
+<div class="foot">FlowSight · metric floor-plan analytics from existing CCTV · no faces, no identities, no biometric data. What-if figures are estimates.</div>
+</body>
+</html>
