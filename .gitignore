@@ -19,7 +19,7 @@ web/dist/
 web/test-results/
 web/playwright-report/
 .env
-.claude/
 data/gt/
 web/dist-static/
 site/
+BUILD_PROMPT.md

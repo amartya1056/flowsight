@@ -279,7 +279,7 @@ sits on the busiest path: 47 shoppers were exposed to it, **0 entered and 0 stop
 ![Shift briefing](docs/screenshots/briefing.png)
 
 Five bullets for the shift manager: traffic and conversion, the most urgent actions, and one opportunity.
-* With `ANTHROPIC_API_KEY` set, Claude rewrites the facts under a strict *"use only the supplied JSON, never invent
+* With `ANTHROPIC_API_KEY` set, an LLM rewrites the facts under a strict *"use only the supplied JSON, never invent
   numbers"* prompt (model configurable).
 * Otherwise, or on any error, a deterministic template is used, so **it always works offline**.
 
