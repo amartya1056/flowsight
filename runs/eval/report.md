@@ -1,6 +1,6 @@
 # FlowSight — analytics accuracy vs simulator ground truth
 
-25 runs = 5 scenarios × 5 seeds × 30 sim-minutes (10 Hz). Measured pipeline sees σ=0.15 m noise, 2% dropouts and random ID breaks; it goes through the real TrackStore (EMA + ID stitching). Ground truth = the same metric definitions on perfect data. Wall time 2.7 min.
+25 runs = 5 scenarios × 5 seeds × 30 sim-minutes (10 Hz). Measured pipeline sees σ=0.15 m noise, 2% dropouts and random ID breaks; it goes through the real TrackStore (EMA + ID stitching). Ground truth = the same metric definitions on perfect data. Wall time 2.6 min.
 
 | Scenario | Visit P | Visit R | Visit F1 | Dwell MAE (s) | Engaged MAE (s) | BN recall | BN recall ≥60 s | BN recall 1:1 | BN precision | BN latency (s) | Zone class. acc | Queue wait MAE (s) | Track frag. |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -28,19 +28,19 @@
 |---|---|---|---|---|---|---|---|---|---|---|
 | baseline | 0 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL |
 | baseline | 1 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | HOT | NORMAL |
-| baseline | 2 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | NORMAL | NORMAL |
+| baseline | 2 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL |
 | baseline | 3 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | NORMAL | NORMAL |
 | baseline | 4 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | NORMAL | NORMAL |
-| rush_hour | 0 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | NORMAL | NORMAL |
-| rush_hour | 1 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL |
-| rush_hour | 2 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | HOT | NORMAL |
-| rush_hour | 3 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL |
-| rush_hour | 4 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL |
-| blocked_aisle | 0 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | HOT | NORMAL |
-| blocked_aisle | 1 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | HOT | NORMAL |
-| blocked_aisle | 2 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL |
-| blocked_aisle | 3 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL |
-| blocked_aisle | 4 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL |
+| rush_hour | 0 | NORMAL | NORMAL | HOT | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL |
+| rush_hour | 1 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | NORMAL | NORMAL |
+| rush_hour | 2 | NORMAL | NORMAL | HOT | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL |
+| rush_hour | 3 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | NORMAL | NORMAL |
+| rush_hour | 4 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | NORMAL | NORMAL |
+| blocked_aisle | 0 | NORMAL | NORMAL | NORMAL | HOT | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL |
+| blocked_aisle | 1 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | NORMAL | NORMAL |
+| blocked_aisle | 2 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | NORMAL | NORMAL |
+| blocked_aisle | 3 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | NORMAL | NORMAL |
+| blocked_aisle | 4 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | NORMAL | NORMAL |
 | ignored_promo | 0 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | NORMAL | IGNORED |
 | ignored_promo | 1 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | NORMAL | IGNORED |
 | ignored_promo | 2 | NORMAL | NORMAL | NORMAL | NORMAL | NORMAL | HOT | NORMAL | NORMAL | IGNORED |

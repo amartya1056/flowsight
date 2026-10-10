@@ -159,7 +159,10 @@ class ActionEngine:
             verb = "Clear" if zt in ("walkway", "entrance") else "Check"
             out.append(_cand(
                 "bottleneck", b.zone_id, sev, f"Congestion in {zname[b.zone_id]}",
-                f"{verb} {zname[b.zone_id]} — density LoS {b.peak_los} for {fmt_dur(dur)}, "
+                f"{verb} {zname[b.zone_id]} — "
+                + (f"density LoS {b.peak_los}" if b.peak_los in ("D", "E", "F") or b.mean_speed_min is None
+                   else f"flow slowed to {b.mean_speed_min:.1f} m/s (LoS {b.peak_los})")
+                + f" for {fmt_dur(dur)}, "
                 f"{len(b.people)} shoppers slowed, {b.time_lost_s:.0f} s lost.",
                 "floor_staff", "now",
                 f"Restoring free flow saves ≈{b.time_lost_s / max(dur, 1) * 60:.0f} shopper-seconds per minute",

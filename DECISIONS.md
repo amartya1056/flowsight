@@ -32,3 +32,8 @@
 - Attention funnel counts UNIQUE shoppers per window (spec: "a track passing through…"), not passes; at peak, walkway-adjacent zones were passed 4–9× per shopper, so legitimately visited off-path zones read as UNVISITED.
 - Bottleneck eval uses any-overlap event matching; strict 1:1 recall and recall on sustained (≥ 60 s) jams are also reported.
 - TARGET NOT MET (documented): rush_hour bottleneck recall over *all* GT episodes is 0.82 (target 0.9). Every sustained jam is caught (recall 1.00, ~4 s latency); the misses are 20–40 s aisle crowds sitting exactly on the LoS-D / 20 s threshold, which become coin-flips under 0.15 m noise. Two honest attempts (aisle rule + hysteresis, noise de-biasing) raised recall 0.62 → 0.82; lowering thresholds to chase the rest would raise false alarms on the floor.
+- HOT zones must also carry ≥ 75 % of median exposure (`hot_min_traffic_share`). Off-path destination zones have ~100 % stopping power by construction (only people going there pass them), so recommending promos next to them reaches nobody.
+- Bottleneck action text says "flow slowed to X m/s" when the speed rule (not density) fired.
+- Screenshots: Playwright headless at 1600×1000; the Layout Advisor uses an `ignored_promo` run (it has a what-if) and Setup uses the CAVIAR store (it has a real camera to calibrate).
+- Not verified: a literal fresh-clone `make setup` (re-downloading ~3 GB over the ~80 KB/s PyPI link seen here). Every step it runs was executed individually; `make demo` was verified end to end (console plus both runs live within ~4 s of the server starting, offline).
+- STRETCH items (staff filtering, counter-flow, ONNX export, multi-camera, MOT metrics) were not done; they are listed in the README roadmap.

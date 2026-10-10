@@ -59,14 +59,14 @@ function ZoneEditor({ store }: { store: StoreDetail }) {
       </div>}>
       <div className="grid grid-cols-[minmax(0,1fr)_260px] gap-4">
         <div>
-          <svg ref={svg} viewBox={`0 0 ${W} ${H}`} className={`w-full rounded-md bg-ink-950 ${drawing ? 'cursor-crosshair' : ''}`}
+          <svg ref={svg} viewBox={`0 0 ${W} ${H}`} style={{ maxHeight: 620 }} className={`mx-auto block w-full rounded-md bg-ink-950 ${drawing ? 'cursor-crosshair' : ''}`}
             onClick={onClick} onDoubleClick={finish} onPointerMove={onMove} onPointerUp={() => setDrag(null)} onPointerLeave={() => setDrag(null)}>
             <image href={store.floorplan_url} x={0} y={0} width={W} height={H} preserveAspectRatio="none" />
             {zones.map((z) => (
               <g key={z.id} onClick={(e) => { if (!drawing) { e.stopPropagation(); setSel(z.id) } }}>
                 <polygon points={z.polygon.map((p) => p.join(',')).join(' ')} fill={TYPE_COLOR[z.type] + (z.id === sel ? '55' : '22')}
                   stroke={z.id === sel ? '#2dd4bf' : TYPE_COLOR[z.type]} strokeWidth={z.id === sel ? 0.08 : 0.04} className="cursor-pointer" />
-                <text x={Math.min(...z.polygon.map((p) => p[0])) + 0.12} y={Math.min(...z.polygon.map((p) => p[1])) + 0.4} fontSize={0.32} fill="#e3e8ef" pointerEvents="none">{z.name}</text>
+                <text x={Math.min(...z.polygon.map((p) => p[0])) + 0.12} y={Math.min(...z.polygon.map((p) => p[1])) + 0.4} fontSize={Math.max(W, H) / 60} fill="#e3e8ef" pointerEvents="none">{z.name}</text>
               </g>
             ))}
             {zone && zone.polygon.map((p, i) => (

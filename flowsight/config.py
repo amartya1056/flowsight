@@ -81,7 +81,7 @@ class AttentionCfg(BaseModel):
     ignored_stopping_power: float = 0.08
     hot_quantile: float = 0.9
     hot_min_stopping_power: float = 0.15
-    hot_min_traffic_share: float = 0.5
+    hot_min_traffic_share: float = 0.75
     min_exposures: int = 30
     merch_zone_types: list[str] = Field(default_factory=lambda: ["aisle", "promo", "service"])
 
