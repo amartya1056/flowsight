@@ -1,26 +1,27 @@
 # Real CCTV: CAVIAR "Shopping Centre in Portugal" corridor view (EC-funded CAVIAR project, Univ. of Edinburgh).
-# APPROXIMATE CALIBRATION: hand-estimated from person heights (≈0.014 m/px near, ≈0.026 m/px far) and the
-# visible floor edges — no survey measurements were available. Refine with `flowsight calibrate` or the Setup page.
+# APPROXIMATE CALIBRATION (no survey available): derived from a ground-plane model fitted to person box heights,
+# h(y) ≈ 0.314·(y + 96.8) px  =>  camera height ≈ 5.4 m, horizon row ≈ -97, assumed ~50° HFOV (f ≈ 412 px).
+# The corridor is ~4 m wide (left shop front at x≈95 px near / ≈88 px far). Refine with `flowsight calibrate`.
 store_id: caviar_corridor
 name: Shopping Centre Corridor (CAVIAR, real CCTV)
 notes: approximate calibration
-floorplan: {image: data/floorplans/caviar_corridor.png, width_m: 4.5, height_m: 9.0}
+floorplan: {image: data/floorplans/caviar_corridor.png, width_m: 4.5, height_m: 16.0}
 cameras:
   - id: cam1
     name: Corridor cam (CAVIAR)
     source: data/videos/caviar_corridor.mp4
     approximate: true
     calibration:
-      image_points: [[95, 285], [377, 285], [85, 110], [239, 110], [90, 155], [292, 155]]
-      floor_points: [[0.3, 8.0], [4.3, 8.0], [0.3, 2.0], [4.3, 2.0], [0.3, 4.6], [4.3, 4.6]]
+      image_points: [[95, 285], [378, 285], [88, 60], [204, 60]]
+      floor_points: [[0.3, 14.0], [4.3, 14.0], [0.3, 3.07], [4.3, 3.07]]
 zones:
-  - {id: z_window_far, name: Window Display (far), type: promo, polygon: [[0.3, 1.5], [1.3, 1.5], [1.3, 4.0], [0.3, 4.0]]}
-  - {id: z_shop_door, name: Shop Entrance, type: entrance, polygon: [[0.3, 4.0], [1.3, 4.0], [1.3, 6.0], [0.3, 6.0]]}
-  - {id: z_window_near, name: Window Display (near), type: promo, polygon: [[0.3, 6.0], [1.3, 6.0], [1.3, 8.5], [0.3, 8.5]]}
-  - {id: z_corr_far, name: Corridor (far), type: walkway, polygon: [[1.3, 1.5], [4.3, 1.5], [4.3, 5.0], [1.3, 5.0]]}
-  - {id: z_corr_near, name: Corridor (near), type: walkway, polygon: [[1.3, 5.0], [4.3, 5.0], [4.3, 8.5], [1.3, 8.5]]}
+  - {id: z_window_far, name: Window Display (far), type: promo, polygon: [[0.3, 1.0], [1.3, 1.0], [1.3, 7.0], [0.3, 7.0]]}
+  - {id: z_shop_door, name: Shop Entrance, type: entrance, polygon: [[0.3, 7.0], [1.3, 7.0], [1.3, 10.5], [0.3, 10.5]]}
+  - {id: z_window_near, name: Window Display (near), type: promo, polygon: [[0.3, 10.5], [1.3, 10.5], [1.3, 15.5], [0.3, 15.5]]}
+  - {id: z_corr_far, name: Corridor (far), type: walkway, polygon: [[1.3, 1.0], [4.3, 1.0], [4.3, 8.5], [1.3, 8.5]]}
+  - {id: z_corr_near, name: Corridor (near), type: walkway, polygon: [[1.3, 8.5], [4.3, 8.5], [4.3, 15.5], [1.3, 15.5]]}
 fixtures:
-  - {name: Shop front, rect: [0.0, 0.0, 0.3, 9.0]}
-  - {name: Railing, rect: [4.3, 0.0, 0.2, 9.0]}
+  - {name: Shop front, rect: [0.0, 0.0, 0.3, 16.0]}
+  - {name: Railing, rect: [4.3, 0.0, 0.2, 16.0]}
 doors:
-  - {name: Shop door, at: [0.15, 5.0]}
+  - {name: Shop door, at: [0.15, 8.75]}
