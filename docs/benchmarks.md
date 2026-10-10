@@ -41,4 +41,21 @@ Analytics cost is independent of image resolution — it only sees floor-metre p
 Notes: per-call latency (~12 ms) dominates at these resolutions, so n vs s and 640 vs 960 differ little and
 the GPU is under-utilised; batching frames from several cameras per call is the obvious next step. The full
 `flowsight process` pipeline on the CAVIAR clip (detector + tracker + analytics + head blur + rendering + MP4
-encode) measured 46 FPS. ONNX/OpenVINO export is a roadmap item and was not benchmarked.
+encode) measured 46 FPS. ONNX export is benchmarked in the CPU section below (OpenVINO/TensorRT not tested).
+
+<!-- cpu-onnx:start -->
+## CPU-only edge box: PyTorch vs ONNX Runtime (detector only, imgsz 640, CAVIAR)
+
+| Model | Runtime | FPS | ms/frame | people/frame | same #detections as PyTorch |
+|---|---|---|---|---|---|
+| yolo11n | pytorch | 33.7 | 29.7 | 0.64 | 100% |
+| yolo11n | onnx | 34.9 | 28.6 | 0.67 | 90% |
+| yolo11s | pytorch | 15.2 | 65.9 | 1.45 | 100% |
+| yolo11s | onnx | 16.4 | 61.1 | 1.45 | 85% |
+
+ONNX Runtime speed-up over PyTorch on CPU — yolo11n: ×1.04, yolo11s: ×1.08. At 5 FPS analytics (enough for dwell and flow) this CPU (all cores) with yolo11n ONNX serves ~7 cameras' worth of detection. Export: `python scripts/export_onnx.py`; use via `runtime.model_cpu: yolo11n_640.onnx`.
+
+**End to end on CPU only:** `flowsight process` on the CAVIAR clip with `yolo11n_640.onnx` (detector + ByteTrack + foot
+points + homography + analytics + action engine + head blur) runs at **24.6 FPS on the i7-13700HX with no GPU**,
+2.5× the 10 FPS analytics rate. A GPU-less edge box can therefore serve ~2 cameras at 10 FPS, or ~5 at 5 FPS.
+<!-- cpu-onnx:end -->

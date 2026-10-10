@@ -56,7 +56,17 @@ class DetectorTracker:
         self.model_name = model_name
         self.imgsz = imgsz or cfg.imgsz
         self.tracker = tracker or cfg.tracker
-        weights = ensure_weights(model_name, cfg.models_dir) if model_name.endswith(".pt") else Path(model_name)
+        if model_name.endswith(".pt"):
+            weights = ensure_weights(model_name, cfg.models_dir)
+        else:  # exported model (onnx / openvino dir / engine): look in models_dir first
+            cand = resolve_path(cfg.models_dir) / model_name
+            weights = cand if cand.exists() else Path(model_name)
+            self.half = False  # precision is baked into the exported artifact
+            import re
+
+            m = re.search(r"_(\d{3,4})\.onnx$", model_name)
+            if m:  # static-shape export: inference size is fixed at export time
+                self.imgsz = int(m.group(1))
         self.model = YOLO(str(weights))
         # Ultralytics >= 8.4 replaces `half=True` with `quantize=16`; support both
         from ultralytics.cfg import DEFAULT_CFG_DICT

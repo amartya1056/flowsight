@@ -84,6 +84,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--video", default="data/videos/caviar_corridor.mp4")
+    ap.add_argument("--onnx", action="store_true", help="only run the CPU PyTorch-vs-ONNX section")
     a = ap.parse_args()
     cfg = load_config()
     video = resolve_path(a.video)
@@ -127,5 +128,65 @@ def main():
     print("wrote", out)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and "--onnx" not in sys.argv:
     main()
+
+
+def bench_cpu_onnx(video: Path, frames: int = 120) -> list[dict]:
+    """PyTorch-CPU vs ONNX-Runtime-CPU at 640 (the edge-box-without-GPU case), with a detection-parity check."""
+    import cv2
+
+    from flowsight.config import load_config
+    from flowsight.perception.detector_tracker import DetectorTracker
+
+    cfg = load_config().with_overrides(runtime={"device": "cpu"})
+    cap = cv2.VideoCapture(str(video))
+    imgs = []
+    while len(imgs) < frames:
+        ok, f = cap.read()
+        if not ok:
+            break
+        imgs.append(f)
+    rows, ref = [], {}
+    for stem in ("yolo11n", "yolo11s"):
+        for fmt, name in (("pytorch", f"{stem}.pt"), ("onnx", f"{stem}_640.onnx")):
+            det = DetectorTracker(cfg.runtime, model_name=name, imgsz=640)
+            for f in imgs[:5]:
+                det.detect(f)
+            counts = []
+            t0 = time.perf_counter()
+            for f in imgs:
+                counts.append(len(det.detect(f)))
+            dt = time.perf_counter() - t0
+            if fmt == "pytorch":
+                ref[stem] = counts
+            agree = float(np.mean(np.array(counts) == np.array(ref[stem]))) if stem in ref else 1.0
+            rows.append({"model": stem, "format": fmt, "fps": len(imgs) / dt, "ms": 1000 * dt / len(imgs),
+                         "people": float(np.mean(counts)), "count_agreement": agree})
+            print(rows[-1], flush=True)
+    return rows
+
+
+def write_cpu_section(rows: list[dict]) -> None:
+    out = ROOT / "docs" / "benchmarks.md"
+    text = out.read_text(encoding="utf-8") if out.exists() else "# FlowSight benchmarks\n"
+    start, end = "<!-- cpu-onnx:start -->", "<!-- cpu-onnx:end -->"
+    if start in text:
+        text = text[:text.index(start)] + text[text.index(end) + len(end):]
+    sec = [start, "## CPU-only edge box: PyTorch vs ONNX Runtime (detector only, imgsz 640, CAVIAR)", "",
+           "| Model | Runtime | FPS | ms/frame | people/frame | same #detections as PyTorch |", "|---|---|---|---|---|---|"]
+    sec += [f"| {r['model']} | {r['format']} | {r['fps']:.1f} | {r['ms']:.1f} | {r['people']:.2f} | "
+            f"{r['count_agreement']:.0%} |" for r in rows]
+    by = {(r["model"], r["format"]): r for r in rows}
+    sp = [f"{m}: ×{by[(m, 'onnx')]['fps'] / by[(m, 'pytorch')]['fps']:.2f}" for m in ("yolo11n", "yolo11s")
+          if (m, "onnx") in by and (m, "pytorch") in by]
+    sec += ["", f"ONNX Runtime speed-up over PyTorch on CPU — {', '.join(sp)}. At 5 FPS analytics (enough for dwell "
+            f"and flow) this CPU (all cores) with yolo11n ONNX serves ~{by[('yolo11n', 'onnx')]['fps'] / 5:.0f} cameras' "
+            "worth of detection. Export: `python scripts/export_onnx.py`; use via `runtime.model_cpu: yolo11n_640.onnx`.",
+            end, ""]
+    out.write_text(text.rstrip() + "\n\n" + "\n".join(sec), encoding="utf-8")
+    print("wrote CPU/ONNX section to", out)
+
+
+if __name__ == "__main__" and "--onnx" in sys.argv:
+    write_cpu_section(bench_cpu_onnx(ROOT / "data" / "videos" / "caviar_corridor.mp4"))
