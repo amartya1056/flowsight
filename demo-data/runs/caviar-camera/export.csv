@@ -1,0 +1,6 @@
+visits,completed_visits,unique_visitors,median_dwell_s,mean_dwell_s,p90_dwell_s,total_engaged_s,stops,occupancy,zone_id,name,type,area_m2,los,density,window_los,mean_speed,free_flow_mps,exposures,stopping_power,attention_status,attention_reason,bottleneck_active
+15,15,12,4.920000000000016,9.642666666666669,24.087999999999994,125.04000000000002,10,0,z_window_far,Window Display (far),promo,6.0,A,0.0,A,,0.25,31,0.2903225806451613,NORMAL,,False
+11,11,9,2.8000000000000114,4.443636363636364,10.119999999999997,26.64,4,0,z_shop_door,Shop Entrance,entrance,3.5,A,0.0,A,,0.43,21,0.19047619047619047,-,,False
+19,19,15,3.3999999999999986,4.808421052631581,11.072,54.08000000000005,8,0,z_window_near,Window Display (near),promo,5.0,A,0.0,A,,0.37,29,0.2413793103448276,NORMAL,,False
+20,20,17,6.38000000000001,11.712000000000002,25.736000000000015,187.67999999999995,14,0,z_corr_far,Corridor (far),walkway,22.5,A,0.0,A,0.1299707012544959,0.25,34,0.35294117647058826,-,,False
+31,31,28,8.8,10.006451612903225,17.320000000000007,153.83999999999992,21,0,z_corr_near,Corridor (near),walkway,21.0,A,0.0,A,0.695274024922791,0.43,32,0.65625,-,,False

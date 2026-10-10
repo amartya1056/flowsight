@@ -1,0 +1,1 @@
+{"run_id":"demo-ignored-promo","store_id":"demo_store","source":"sim:ignored_promo","speed":"max","created":1791647313.8373034,"finished":false,"progress":1.0,"error":null,"device":"simulator","model":"sim:ignored_promo","calibrated":true,"ts":1800.001,"is_sim":true,"proc_fps":880.0,"frame_size":[0,0]}

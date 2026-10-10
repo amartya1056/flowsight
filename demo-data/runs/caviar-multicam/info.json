@@ -1,0 +1,1 @@
+{"run_id":"caviar-multicam","store_id":"caviar_multicam","source":"multi","speed":"max","created":1791647429.5548935,"finished":false,"progress":1.0,"error":null,"device":"cuda:0","model":"yolo11s.pt x2 cams","calibrated":true,"ts":118.20100000000001,"is_sim":false,"proc_fps":28.0,"frame_size":[768,288]}

@@ -1,0 +1,1 @@
+{"run_id":"caviar-camera","store_id":"caviar_corridor","source":"cam1","speed":"max","created":1791647385.1608973,"finished":false,"progress":1.0,"error":null,"device":"cuda:0","model":"yolo11s.pt","calibrated":true,"ts":202.121,"is_sim":false,"proc_fps":56.0,"frame_size":[384,288]}

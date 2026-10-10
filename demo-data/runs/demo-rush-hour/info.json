@@ -1,0 +1,1 @@
+{"run_id":"demo-rush-hour","store_id":"demo_store","source":"sim:rush_hour","speed":"max","created":1791647297.2368767,"finished":false,"progress":1.0,"error":null,"device":"simulator","model":"sim:rush_hour","calibrated":true,"ts":1500.001,"is_sim":true,"proc_fps":398.0,"frame_size":[0,0]}
