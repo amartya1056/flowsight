@@ -23,3 +23,4 @@ data/gt/
 web/dist-static/
 site/
 BUILD_PROMPT.md
+web/dist-vercel/

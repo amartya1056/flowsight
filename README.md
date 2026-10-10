@@ -1,8 +1,8 @@
 # FlowSight: Retail Dwell-Time & Bottleneck Intelligence
 
-### 🔗 [Live demo](https://amartya1056.github.io/flowsight/) · [Source code](https://github.com/amartya1056/flowsight)
+### 🔗 [Live demo (Vercel)](https://flowsight-ashen.vercel.app/) · [Mirror (GitHub Pages)](https://amartya1056.github.io/flowsight/) · [Source code](https://github.com/amartya1056/flowsight)
 
-> **Live demo:** **https://amartya1056.github.io/flowsight/**: the full Store Ops Console replaying recorded FlowSight runs
+> **Live demo:** **https://flowsight-ashen.vercel.app/** (mirror: https://amartya1056.github.io/flowsight/): the full Store Ops Console replaying recorded FlowSight runs
 > (rush hour, ignored promo, staff filtering, real CAVIAR CCTV, two-camera fusion) in your browser. See
 > [§2.1](#21-the-live-demo-github-pages) for what the hosted demo can and can't do.
 > **Repository:** https://github.com/amartya1056/flowsight
@@ -81,10 +81,15 @@ Judges at Everseen have seen a hundred "YOLO + heatmap" demos. FlowSight is buil
 
 ## 2. Quick start: run it on localhost
 
-### 2.1 The live demo (GitHub Pages)
+### 2.1 The live demo (Vercel & GitHub Pages)
 
-**https://amartya1056.github.io/flowsight/** hosts the console as a **static replay**. GitHub Pages cannot run the
-Python/GPU backend, so `scripts/export_static_demo.py` runs the real pipeline locally and records five runs:
+| Where | URL |
+|---|---|
+| **Vercel** (primary) | **https://flowsight-ashen.vercel.app/** |
+| GitHub Pages (mirror) | https://amartya1056.github.io/flowsight/ |
+
+Both host the console as a **static replay**. Static hosts cannot run the Python/GPU backend, so
+`scripts/export_static_demo.py` runs the real pipeline locally and records five runs:
 
 | Run | Source | What to look at |
 |---|---|---|
@@ -104,10 +109,20 @@ Briefing, report and CSV downloads, and the zone editor (editing only). Starting
 computing calibrations need the backend, so those buttons are disabled there. To process your own video, run FlowSight
 locally (below).
 
-Redeploy after changes:
+Redeploy after changes (`--record` re-records the runs first):
 ```bash
-python scripts/deploy_pages.py --record
+python scripts/deploy_vercel.py --record
 ```
+```bash
+python scripts/deploy_pages.py
+```
+
+**Hosting the full backend.** `deploy/huggingface/Dockerfile` plus `scripts/deploy_hf.py` package the complete
+backend and console as a Hugging Face Docker Space (CPU PyTorch, YOLO11n, CAVIAR clips fetched at build time, port
+7860). Hugging Face currently requires a PRO subscription for Docker Spaces, so this is not live yet. With PRO, run
+`python scripts/deploy_hf.py`. The same Docker image runs on any container host (Render, Fly.io, Cloud Run, a VM).
+To point a separately hosted console at it, build the frontend with `VITE_API_BASE=https://<backend-host>`; the
+backend accepts cross-origin calls via `FLOWSIGHT_CORS_ORIGINS`.
 
 ### 2.2 Run it on localhost
 
@@ -672,6 +687,8 @@ All tunables live in [config/default.yaml](config/default.yaml); nothing is hard
 | `python scripts/counterflow_demo.py` | render the counter-flow illustration |
 | `python scripts/export_static_demo.py` | record the demo runs into `site/demo-data/` for the static replay |
 | `python scripts/deploy_pages.py [--record]` | build the static console and push it to the `gh-pages` branch (GitHub Pages) |
+| `python scripts/deploy_vercel.py [--record]` | build the replay console and deploy it to Vercel production |
+| `python scripts/deploy_hf.py` | package the full backend + console as a Hugging Face Docker Space (needs HF PRO) |
 | `node web/scripts/readme_shots.mjs <shot…>` | regenerate the README screenshots from a running server |
 
 `make` targets: `setup · data · process · sim · eval · test · api · web · build · demo · bench`.
