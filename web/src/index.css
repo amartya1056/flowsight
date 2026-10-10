@@ -1,0 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+html, body, #root { height: 100%; }
+body { @apply bg-ink-950 text-ink-100 font-sans antialiased; }
+.num { font-variant-numeric: tabular-nums; }
+.panel { @apply bg-ink-900 border border-ink-700 rounded-lg; }
+.panel-h { @apply flex items-center justify-between px-4 py-2.5 border-b border-ink-700 text-xs font-semibold uppercase tracking-wider text-ink-300; }
+.btn { @apply inline-flex items-center gap-1.5 rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-sm text-ink-100 hover:bg-ink-700 hover:border-ink-500 disabled:opacity-40 transition-colors; }
+.btn-primary { @apply border-signal-dim bg-signal/10 text-signal hover:bg-signal/20; }
+.select { @apply rounded-md border border-ink-600 bg-ink-800 px-2 py-1.5 text-sm text-ink-100 outline-none focus:border-signal; }
+.input { @apply rounded-md border border-ink-600 bg-ink-850 px-2 py-1 text-sm text-ink-100 outline-none focus:border-signal; }
+.chip { @apply inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #263142; border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }

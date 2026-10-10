@@ -46,6 +46,7 @@ attention:
   ignored_stopping_power: 0.08    # exposures that convert to stops
   hot_quantile: 0.9               # top-decile stopping power
   hot_min_stopping_power: 0.15
+  hot_min_traffic_share: 0.5      # a HOT zone must also be on a busy path (else promos there reach nobody)
   min_exposures: 30               # need this many exposures before calling a zone IGNORED/HOT
   merch_zone_types: [aisle, promo, service]
 flow:

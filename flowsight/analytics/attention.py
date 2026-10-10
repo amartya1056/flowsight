@@ -13,7 +13,8 @@ Classification (merchandisable zones only: aisle / promo / service):
                 That is a LAYOUT / WAYFINDING problem.
   * IGNORED   — normal exposure but stopping power < ignored_stopping_power: people walk past and
                 don't stop. That is a MERCHANDISING / DISPLAY problem.
-  * HOT       — top-decile stopping power: an opportunity to place promotions nearby.
+  * HOT       — top-decile stopping power among zones on a busy path (>= hot_min_traffic_share x median
+                exposure): an opportunity to place promotions nearby.
 """
 from __future__ import annotations
 
@@ -63,7 +64,8 @@ class AttentionAnalyzer:
         if not merch:
             return res
         med = float(np.median([r["exposures"] for r in merch]))
-        r_ok = [r for r in merch if r["exposures"] >= self.cfg.min_exposures]
+        busy = self.cfg.hot_min_traffic_share * med
+        r_ok = [r for r in merch if r["exposures"] >= max(self.cfg.min_exposures, busy)]
         sps = [r["stopping_power"] for r in r_ok if r["stopping_power"] is not None]
         hot_thr = float(np.quantile(sps, self.cfg.hot_quantile)) if len(sps) >= 3 else None
         for r in merch:
@@ -77,7 +79,7 @@ class AttentionAnalyzer:
                     and r["stopping_power"] < self.cfg.ignored_stopping_power:
                 r["status"] = IGNORED
                 r["reason"] = (f"{r['exposures']} shoppers passed, only {r['stopping_power']:.0%} stopped")
-            elif hot_thr is not None and r["exposures"] >= self.cfg.min_exposures \
+            elif hot_thr is not None and r["exposures"] >= max(self.cfg.min_exposures, busy) \
                     and r["stopping_power"] is not None and r["stopping_power"] >= max(hot_thr, self.cfg.hot_min_stopping_power):
                 r["status"] = HOT
                 r["reason"] = f"stopping power {r['stopping_power']:.0%} (top decile)"
