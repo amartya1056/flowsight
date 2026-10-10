@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, fmtDur, label } from './api'
 import { useApp } from './store'
 import { useLiveRun } from './useLiveRun'
+import { STATIC } from './static'
 import LiveOps from './pages/LiveOps'
 import FloorPlan from './pages/FloorPlan'
 import Zones from './pages/Zones'
@@ -94,18 +95,28 @@ function TopBar() {
         {stores.data?.map((s) => <option key={s.store_id} value={s.store_id}>{s.name}</option>)}
       </select>
       <div className="h-6 w-px bg-ink-700" />
+      {!STATIC && <>
       <select className="select max-w-[210px]" value={source} onChange={(e) => setSource(e.target.value)} aria-label="Source">
         {sources.map((s) => <option key={s.value} value={s.value} disabled={s.disabled}>{s.label}</option>)}
       </select>
       <select className="select" value={speed} onChange={(e) => setSpeed(e.target.value)} aria-label="Speed">
         {['1', '2', '4', 'max'].map((s) => <option key={s} value={s}>{s === 'max' ? 'max' : `${s}×`}</option>)}
       </select>
+      </>}
+      {STATIC ? (
+        <a className="whitespace-nowrap rounded border border-sev-medium/50 bg-sev-medium/10 px-2.5 py-1.5 text-xs font-medium text-sev-medium"
+          href="https://github.com/amartya1056/flowsight#2-quick-start--run-it-on-localhost" target="_blank" rel="noreferrer"
+          title="Recorded runs replayed in your browser. Run FlowSight locally (make demo) for live processing.">
+          Static replay demo · run locally for live video
+        </a>
+      ) : <>
       <button className="btn btn-primary" onClick={start} disabled={busy || !source}>
         <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor"><path d="M7 4l13 8-13 8z" /></svg> Start
       </button>
       <button className="btn" onClick={stop} disabled={!runId || current?.finished}>
         <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor"><rect x="6" y="6" width="12" height="12" /></svg> Stop
       </button>
+      </>}
       <div className="h-6 w-px bg-ink-700" />
       <select className="select max-w-[230px] font-mono text-xs" value={runId ?? ''} aria-label="Run"
         onChange={(e) => {

@@ -21,3 +21,5 @@ web/playwright-report/
 .env
 .claude/
 data/gt/
+web/dist-static/
+site/

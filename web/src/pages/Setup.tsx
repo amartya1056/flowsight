@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ZONE_TYPES, api, type CalibResult, type StoreDetail, type ZoneCfg } from '../api'
 import { Empty, Panel } from '../components/common'
 import { useApp } from '../store'
+import { STATIC, u } from '../static'
 
 const TYPE_COLOR: Record<string, string> = { entrance: '#4f8fd9', aisle: '#94a3b8', promo: '#d946ef', walkway: '#64748b', checkout: '#f59e0b', service: '#2dd4bf' }
 const snap = (v: number) => Math.round(v * 20) / 20
@@ -55,13 +56,13 @@ function ZoneEditor({ store }: { store: StoreDetail }) {
       right={<div className="flex gap-2 normal-case tracking-normal">
         {drawing ? <><button className="btn btn-primary" onClick={finish}>Finish polygon ({drawing.length})</button><button className="btn" onClick={() => setDrawing(null)}>Cancel</button></>
           : <button className="btn" onClick={() => { setDrawing([]); setSel(null) }}>+ Draw zone</button>}
-        <button className="btn btn-primary" onClick={save}>Save zones</button>
+        <button className="btn btn-primary" onClick={save} disabled={STATIC} title={STATIC ? 'Saving needs the local backend' : ''}>Save zones</button>
       </div>}>
       <div className="grid grid-cols-[minmax(0,1fr)_260px] gap-4">
         <div>
           <svg ref={svg} viewBox={`0 0 ${W} ${H}`} style={{ maxHeight: 620 }} className={`mx-auto block w-full rounded-md bg-ink-950 ${drawing ? 'cursor-crosshair' : ''}`}
             onClick={onClick} onDoubleClick={finish} onPointerMove={onMove} onPointerUp={() => setDrag(null)} onPointerLeave={() => setDrag(null)}>
-            <image href={store.floorplan_url} x={0} y={0} width={W} height={H} preserveAspectRatio="none" />
+            <image href={u(store.floorplan_url)} x={0} y={0} width={W} height={H} preserveAspectRatio="none" />
             {zones.map((z) => (
               <g key={z.id} onClick={(e) => { if (!drawing) { e.stopPropagation(); setSel(z.id) } }}>
                 <polygon points={z.polygon.map((p) => p.join(',')).join(' ')} fill={TYPE_COLOR[z.type] + (z.id === sel ? '55' : '22')}
@@ -121,7 +122,7 @@ function Calibration({ store }: { store: StoreDetail }) {
     setImg(null)
   }, [camId, cam?.calibration])
   if (!cam) return <Panel title="Calibration"><Empty>This store has no real cameras (simulator only).</Empty></Panel>
-  const frameUrl = `/api/stores/${store.store_id}/cameras/${cam.id}/frame.jpg`
+  const frameUrl = u(`/api/stores/${store.store_id}/cameras/${cam.id}/frame.jpg`)
   const run = async (save: boolean) => {
     setErr('')
     try {
@@ -134,8 +135,8 @@ function Calibration({ store }: { store: StoreDetail }) {
       right={<div className="flex items-center gap-2 normal-case tracking-normal">
         <select className="select" value={camId} onChange={(e) => setCamId(e.target.value)}>{cams.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
         <button className="btn" onClick={() => setPts([])}>Clear points</button>
-        <button className="btn" disabled={pts.length < 4} onClick={() => run(false)}>Compute</button>
-        <button className="btn btn-primary" disabled={pts.length < 4} onClick={() => run(true)}>Save</button>
+        <button className="btn" disabled={STATIC || pts.length < 4} onClick={() => run(false)}>Compute</button>
+        <button className="btn btn-primary" disabled={STATIC || pts.length < 4} onClick={() => run(true)}>Save</button>
       </div>}>
       <div className="grid grid-cols-2 gap-4">
         <div>

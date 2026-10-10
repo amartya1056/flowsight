@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { LOS_COLOR, api, fmtDur, pct, type AttentionZone } from '../api'
 import { Empty, NeedRun, Panel } from '../components/common'
 import { useApp } from '../store'
+import { u } from '../static'
 
 function ZoneList({ items, tone, empty }: { items: AttentionZone[]; tone: string; empty: string }) {
   if (!items.length) return <Empty>{empty}</Empty>
@@ -80,7 +81,7 @@ export default function LayoutAdvisor() {
                 </tbody>
               </table>
             ) : <Empty>No bottlenecks recorded.</Empty>}
-            {runId && <img src={`/api/runs/${runId}/heatmap?type=stationary`} alt="stationary heatmap" className="block w-full border-t border-ink-700" />}
+            {runId && <img src={u(`/api/runs/${runId}/heatmap?type=stationary`)} alt="stationary heatmap" className="block w-full border-t border-ink-700" />}
           </Panel>
           <Panel title={<span>Ignored zones <span className="normal-case tracking-normal text-ink-400">· merchandising problem</span></span>}>
             <ZoneList items={L?.ignored ?? []} tone="#a855f7" empty="No ignored zones: passers-by stop at normal rates." />

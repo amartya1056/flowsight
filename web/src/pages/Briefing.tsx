@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api'
 import { Empty, InsightCard, KpiStrip, NeedRun, Panel, useActiveInsights } from '../components/common'
 import { useApp } from '../store'
+import { u } from '../static'
 
 export default function Briefing() {
   const { runId, kpis } = useApp()
@@ -15,8 +16,8 @@ export default function Briefing() {
             {q.data.mode === 'llm' ? `LLM · ${q.data.model}` : 'deterministic template'}</span>}</span>}
           right={runId && (
             <div className="flex gap-2 normal-case tracking-normal">
-              <a className="btn" href={`/api/runs/${runId}/report.html`} target="_blank" rel="noreferrer">Download daily report</a>
-              <a className="btn" href={`/api/runs/${runId}/export.csv`}>Zone CSV</a>
+              <a className="btn" href={u(`/api/runs/${runId}/report.html`)} target="_blank" rel="noreferrer">Download daily report</a>
+              <a className="btn" href={u(`/api/runs/${runId}/export.csv`)}>Zone CSV</a>
               <button className="btn" onClick={() => q.refetch()}>Regenerate</button>
             </div>
           )}>

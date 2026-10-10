@@ -19,6 +19,10 @@ interface AppState {
   seedInsights: (list: Insight[]) => void
   upsertInsight: (i: Insight) => void
   setConnected: (c: boolean) => void
+  replaceInsights: (list: Insight[]) => void
+  videoClock: number | null
+  videoClockAt: number
+  setVideoClock: (t: number) => void
 }
 
 const fresh = { people: [], zones: {}, kpis: null, insights: {}, ts: 0, progress: 0, finished: false, error: null }
@@ -46,4 +50,14 @@ export const useApp = create<AppState>((set) => ({
       return { insights }
     }),
   upsertInsight: (i) => set((s) => ({ insights: { ...s.insights, [i.id]: i } })),
+  replaceInsights: (list) =>
+    set((s) => {
+      // keep local acks across replay updates
+      const insights: Record<string, Insight> = {}
+      for (const i of list) insights[i.id] = s.insights[i.id]?.status === 'acked' ? { ...i, status: 'acked' } : i
+      return { insights }
+    }),
+  videoClock: null,
+  videoClockAt: 0,
+  setVideoClock: (t) => set({ videoClock: t, videoClockAt: Date.now() }),
 }))

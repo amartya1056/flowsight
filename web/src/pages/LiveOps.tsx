@@ -2,9 +2,12 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api'
 import { Empty, InsightCard, KpiStrip, NeedRun, Panel, useActiveInsights } from '../components/common'
 import { useApp } from '../store'
+import FloorCanvas from '../components/FloorCanvas'
+import { STATIC, staticVideo } from '../static'
 
 export default function LiveOps() {
-  const { runId, kpis, finished, error } = useApp()
+  const { runId, kpis, finished, error, people, zones, storeId, setVideoClock } = useApp()
+  const store = useQuery({ queryKey: ['store', storeId], queryFn: () => api.store(storeId), enabled: STATIC })
   const run = useQuery({ queryKey: ['run', runId], queryFn: () => api.run(runId!), enabled: !!runId, refetchInterval: 5000 })
   const active = useActiveInsights()
   const counts = active.reduce<Record<string, number>>((a, i) => ({ ...a, [i.horizon]: (a[i.horizon] ?? 0) + 1 }), {})
@@ -24,7 +27,14 @@ export default function LiveOps() {
             )}
             bodyClass="p-2 flex items-center justify-center bg-ink-950/60"
           >
-            {error ? <Empty>Pipeline error: {error}</Empty> : (
+            {error ? <Empty>Pipeline error: {error}</Empty> : STATIC ? (
+              r && !r.is_sim ? (
+                <video key={runId} src={staticVideo(runId!)} autoPlay muted loop playsInline controls
+                  onTimeUpdate={(e) => setVideoClock(e.currentTarget.currentTime)} className="h-full w-full rounded object-contain" />
+              ) : store.data ? (
+                <FloorCanvas store={store.data} people={people} live={zones} className="w-full" />
+              ) : <Empty>Loading replay…</Empty>
+            ) : (
               <img key={runId} src={`/api/runs/${runId}/stream.mjpg`} alt="live annotated stream"
                 className="h-full w-full rounded object-contain [image-rendering:auto]" onError={(e) => { (e.target as HTMLImageElement).src = `/api/runs/${runId}/frame.jpg?${Date.now()}` }} />
             )}

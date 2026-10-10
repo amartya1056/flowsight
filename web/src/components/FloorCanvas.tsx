@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { u } from '../static'
 import { LOS_COLOR, fmtDur, pct, type HeatGrid, type LiveZone, type Person, type StoreDetail, type ZoneKpi } from '../api'
 
 interface Props {
@@ -44,7 +45,7 @@ export default function FloorCanvas({ store, people = [], live = {}, heat, kpis,
   useEffect(() => {
     const im = new Image()
     im.onload = () => setImg(im)
-    im.src = store.floorplan_url
+    im.src = u(store.floorplan_url)
   }, [store.floorplan_url])
 
   useEffect(() => {

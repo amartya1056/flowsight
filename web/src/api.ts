@@ -1,3 +1,5 @@
+import { STATIC, StaticDemoError, u } from './static'
+
 export type LoS = 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
 export type Severity = 'critical' | 'high' | 'medium' | 'low'
 
@@ -72,30 +74,34 @@ async function j<T>(r: Response): Promise<T> {
   if (!r.ok) throw new Error(`${r.status} ${await r.text()}`)
   return r.json() as Promise<T>
 }
-const json = (method: string, body: unknown): RequestInit => ({
+const json = (method: string, body: unknown): RequestInit => {
+  if (STATIC) throw new StaticDemoError()
+  return jsonInit(method, body)
+}
+const jsonInit = (method: string, body: unknown): RequestInit => ({
   method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
 })
 
 export const api = {
-  stores: () => fetch('/api/stores').then(j<StoreSummary[]>),
-  store: (id: string) => fetch(`/api/stores/${id}`).then(j<StoreDetail>),
-  runs: () => fetch('/api/runs').then(j<RunInfo[]>),
-  run: (id: string) => fetch(`/api/runs/${id}`).then(j<RunInfo>),
+  stores: () => fetch(u('/api/stores')).then(j<StoreSummary[]>),
+  store: (id: string) => fetch(u(`/api/stores/${id}`)).then(j<StoreDetail>),
+  runs: () => fetch(u('/api/runs')).then(j<RunInfo[]>),
+  run: (id: string) => fetch(u(`/api/runs/${id}`)).then(j<RunInfo>),
   startRun: (body: { store_id: string; source: string; speed: string | number; duration_s?: number }) =>
-    fetch('/api/runs', json('POST', body)).then(j<RunInfo>),
-  stopRun: (id: string) => fetch(`/api/runs/${id}`, { method: 'DELETE' }).then(j<{ ok: boolean }>),
-  zones: (id: string) => fetch(`/api/runs/${id}/zones`).then(j<ZoneKpi[]>),
-  flow: (id: string) => fetch(`/api/runs/${id}/flow`).then(j<FlowSummary>),
-  layout: (id: string) => fetch(`/api/runs/${id}/layout`).then(j<Layout>),
-  bottlenecks: (id: string) => fetch(`/api/runs/${id}/bottlenecks`).then(j<Bottleneck[]>),
-  insights: (id: string, status = 'all') => fetch(`/api/runs/${id}/insights?status=${status}`).then(j<Insight[]>),
-  ack: (id: string, iid: string) => fetch(`/api/runs/${id}/insights/${iid}/ack`, { method: 'POST' }).then(j<Insight>),
-  briefing: (id: string) => fetch(`/api/runs/${id}/briefing`).then(j<Briefing>),
+    fetch(u('/api/runs'), json('POST', body)).then(j<RunInfo>),
+  stopRun: (id: string) => (STATIC ? Promise.reject(new StaticDemoError()) : fetch(u(`/api/runs/${id}`), { method: 'DELETE' }).then(j<{ ok: boolean }>)),
+  zones: (id: string) => fetch(u(`/api/runs/${id}/zones`)).then(j<ZoneKpi[]>),
+  flow: (id: string) => fetch(u(`/api/runs/${id}/flow`)).then(j<FlowSummary>),
+  layout: (id: string) => fetch(u(`/api/runs/${id}/layout`)).then(j<Layout>),
+  bottlenecks: (id: string) => fetch(u(`/api/runs/${id}/bottlenecks`)).then(j<Bottleneck[]>),
+  insights: (id: string, status = 'all') => fetch(u(`/api/runs/${id}/insights?status=${status}`)).then(j<Insight[]>),
+  ack: (id: string, iid: string) => fetch(u(`/api/runs/${id}/insights/${iid}/ack`), { method: STATIC ? 'GET' : 'POST' }).then(j<Insight>),
+  briefing: (id: string) => fetch(u(`/api/runs/${id}/briefing`)).then(j<Briefing>),
   heat: (id: string, type: string, window?: number) =>
-    fetch(`/api/runs/${id}/heatmap?format=json&type=${type}${window ? `&window=${window}` : ''}`).then(j<HeatGrid>),
-  putZones: (sid: string, zones: ZoneCfg[]) => fetch(`/api/stores/${sid}/zones`, json('PUT', { zones })).then(j<{ ok: boolean }>),
+    fetch(u(`/api/runs/${id}/heatmap?format=json&type=${type}${window ? `&window=${window}` : ''}`)).then(j<HeatGrid>),
+  putZones: (sid: string, zones: ZoneCfg[]) => fetch(u(`/api/stores/${sid}/zones`), json('PUT', { zones })).then(j<{ ok: boolean }>),
   putCalibration: (sid: string, body: { camera_id: string; image_points: number[][]; floor_points: number[][]; save: boolean }) =>
-    fetch(`/api/stores/${sid}/calibration`, json('PUT', body)).then(j<CalibResult>),
+    fetch(u(`/api/stores/${sid}/calibration`), json('PUT', body)).then(j<CalibResult>),
 }
 
 export const LOS_COLOR: Record<string, string> = { A: '#22c55e', B: '#84cc16', C: '#eab308', D: '#f97316', E: '#ef4444', F: '#b91c1c' }

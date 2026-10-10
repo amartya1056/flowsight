@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { SEV_COLOR, api, fmtDur, label, pct, type Insight, type Kpis } from '../api'
 import { useApp } from '../store'
+import { STATIC, u } from '../static'
 
 export function Panel({ title, right, children, className, bodyClass }: { title: ReactNode; right?: ReactNode; children: ReactNode; className?: string; bodyClass?: string }) {
   return (
@@ -58,6 +59,7 @@ export function InsightCard({ i, compact }: { i: Insight; compact?: boolean }) {
   const metrics = Object.entries(i.evidence.metrics).filter(([, v]) => typeof v === 'number' || typeof v === 'string').slice(0, 4)
   const ack = async () => {
     if (!runId) return
+    if (STATIC) return upsertInsight({ ...i, status: 'acked' })  // replay mode: acknowledge locally
     upsertInsight(await api.ack(runId, i.id))
     qc.invalidateQueries({ queryKey: ['insights'] })
   }
@@ -91,8 +93,8 @@ export function InsightCard({ i, compact }: { i: Insight; compact?: boolean }) {
           </div>
         </div>
         {!compact && i.evidence.snapshot_path && runId && (
-          <a href={`/api/runs/${runId}/${i.evidence.snapshot_path}`} target="_blank" rel="noreferrer" className="shrink-0">
-            <img src={`/api/runs/${runId}/${i.evidence.snapshot_path}`} alt="evidence (privacy-blurred)" className="h-20 w-28 rounded border border-ink-700 object-cover" />
+          <a href={u(`/api/runs/${runId}/${i.evidence.snapshot_path}`)} target="_blank" rel="noreferrer" className="shrink-0">
+            <img src={u(`/api/runs/${runId}/${i.evidence.snapshot_path}`)} alt="evidence (privacy-blurred)" className="h-20 w-28 rounded border border-ink-700 object-cover" />
           </a>
         )}
       </div>

@@ -1,5 +1,12 @@
 # FlowSight — Retail Dwell-Time & Bottleneck Intelligence
 
+### 🔗 [Live demo](https://amartya1056.github.io/flowsight/) · [Source code](https://github.com/amartya1056/flowsight)
+
+> **Live demo:** **https://amartya1056.github.io/flowsight/** — the full Store Ops Console replaying recorded FlowSight runs
+> (rush hour, ignored promo, staff filtering, real CAVIAR CCTV, two-camera fusion) in your browser. See
+> [§2.1](#21-the-live-demo-github-pages) for what the hosted demo can and can't do.
+> **Repository:** https://github.com/amartya1056/flowsight
+
 > **Everseen × E-Cell IIT Bombay Computer Vision AI Hackathon — Problem Statement 3**
 > *"Design and build an intelligent computer vision solution that processes standard in-store camera feeds to map customer journeys, generate real-time foot-traffic heat maps, calculate precise section-by-section dwell times, and automatically flag layout bottlenecks or dead zones."*
 
@@ -24,7 +31,7 @@ or 24.6 FPS on a CPU alone.
 ## Table of contents
 
 1. [Why FlowSight is different](#1-why-flowsight-is-different)
-2. [Quick start — run it on localhost](#2-quick-start--run-it-on-localhost)
+2. [Quick start — live demo & localhost](#2-quick-start--run-it-on-localhost)
 3. [Tour of the Store Ops Console (every page)](#3-tour-of-the-store-ops-console)
    - [3.1 Top bar: stores, sources, runs](#31-top-bar-stores-sources-runs)
    - [3.2 Live Ops — the action feed](#32-live-ops--the-action-feed)
@@ -73,6 +80,36 @@ Judges at Everseen have seen a hundred "YOLO + heatmap" demos. FlowSight is buil
 ---
 
 ## 2. Quick start — run it on localhost
+
+### 2.1 The live demo (GitHub Pages)
+
+**https://amartya1056.github.io/flowsight/** hosts the console as a **static replay**. GitHub Pages cannot run the
+Python/GPU backend, so `scripts/export_static_demo.py` runs the real pipeline locally and records five runs:
+
+| Run | Source | What to look at |
+|---|---|---|
+| `demo-rush-hour` | simulator, rush hour (25 min) | the action feed during the queue spill-back, bottlenecks pulsing, the Journeys Sankey |
+| `demo-ignored-promo` | simulator, ignored promo (30 min) | the IGNORED promo funnel and the what-if relocation in the Layout Advisor |
+| `demo-with-staff` | simulator, 2 employees (45 min) | the "staff excluded / visits purged" KPI |
+| `caviar-camera` | **real CCTV** (YOLO11s + ByteTrack, 202 s) | annotated video with blurred heads, the corridor floor plan and heatmaps |
+| `caviar-multicam` | **two real cameras**, auto-calibrated + fused (118 s) | both views with shared global IDs and the fused floor plan |
+
+For each run it records the live timeline (positions, zone states, KPIs, the action list whenever it changes) plus
+every API response, the evidence snapshots, the daily report, the CSV and the annotated videos. The console is built
+with `vite build --mode static`, which reads those files instead of the API and **replays each run in a loop**.
+Simulator runs start just before their busiest moment, and camera runs follow the video.
+
+Every page works in the demo: Live Ops, Floor Plan, heatmaps and windows, Zones and drawers, Journeys, Layout Advisor,
+Briefing, report and CSV downloads, and the zone editor (editing only). Starting/stopping runs, saving zones and
+computing calibrations need the backend, so those buttons are disabled there. To process your own video, run FlowSight
+locally (below).
+
+Redeploy after changes:
+```bash
+python scripts/deploy_pages.py --record
+```
+
+### 2.2 Run it on localhost
 
 ### Prerequisites
 * Python 3.11, Node 18+ (tested with Node 24), `ffmpeg` on `PATH` (for downloading/transcoding clips).
@@ -633,6 +670,8 @@ All tunables live in [config/default.yaml](config/default.yaml); nothing is hard
 | `python scripts/export_onnx.py` · `python scripts/bench.py [--onnx]` | ONNX export · benchmarks → `docs/benchmarks.md` |
 | `python scripts/download_data.py` | test footage, ground truth, floor plans |
 | `python scripts/counterflow_demo.py` | render the counter-flow illustration |
+| `python scripts/export_static_demo.py` | record the demo runs into `site/demo-data/` for the static replay |
+| `python scripts/deploy_pages.py [--record]` | build the static console and push it to the `gh-pages` branch (GitHub Pages) |
 | `node web/scripts/readme_shots.mjs <shot…>` | regenerate the README screenshots from a running server |
 
 `make` targets: `setup · data · process · sim · eval · test · api · web · build · demo · bench`.
@@ -657,9 +696,10 @@ flowsight/                    python package
   eval/                       evaluate.py (sim accuracy), mot.py (tracking metrics), multicam_gt.py
   pipeline.py · cli.py        orchestration (video / multi-camera / sim) · typer CLI
 api/                          FastAPI app + printable report template
-web/                          React + Vite + TypeScript + Tailwind + ECharts console (7 pages)
+web/                          React + Vite + TypeScript + Tailwind + ECharts console (7 pages; `--mode static` = replay build)
 config/                       default.yaml + stores/{demo_store, caviar_corridor, caviar_multicam}.yaml
-scripts/                      tasks.py (make), download_data, bench, export_onnx, autocalibrate, counterflow_demo
+scripts/                      tasks.py (make), download_data, bench, export_onnx, autocalibrate, counterflow_demo,
+                              export_static_demo + deploy_pages (GitHub Pages replay demo)
 tests/                        46 pytest tests
 docs/                         screenshots/, benchmarks.md, tracking_metrics.md, multicam_autocalib.md, demo_script.md
 runs/eval/                    accuracy report + CSV (other run outputs are gitignored)
