@@ -75,7 +75,10 @@ def _store_or_404(store_id: str):
 def start_run(store_id: str, source: str, speed="1", duration_s: float | None = None, seed: int = 0,
               run_id: str | None = None) -> RunHandle:
     store = _store_or_404(store_id)
-    if not source.startswith("sim"):
+    if source.startswith("multi"):
+        if sum(1 for c in store.cameras if c.calibration is not None and c.source != "sim") < 2:
+            raise HTTPException(400, "multi-camera fusion needs >= 2 calibrated cameras")
+    elif not source.startswith("sim"):
         cam = store.camera(source)
         if not cam.source.startswith(("rtsp://", "http://", "https://")) and not cam.source.isdigit() \
                 and not resolve_path(cam.source).exists():
@@ -109,6 +112,7 @@ def _store_summary(st) -> dict:
                      "calibrated": c.calibration is not None, "approximate": c.approximate})
     return {"store_id": st.store_id, "name": st.name or st.store_id, "cameras": [c for c in cams if c["source"] != "sim"],
             "scenarios": list((st.sim or {}).get("scenarios", {}).keys()),
+            "multi": sum(1 for c in cams if c["calibrated"] and c["available"] and c["source"] != "sim") >= 2,
             "width_m": st.floorplan.width_m, "height_m": st.floorplan.height_m}
 
 

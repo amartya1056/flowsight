@@ -14,7 +14,7 @@ export default function LiveOps() {
       <div className="flex h-full min-h-[640px] flex-col gap-4">
         <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1.55fr)_minmax(380px,1fr)] gap-4">
           <Panel
-            title={r?.is_sim ? 'Store view · simulator (top-down)' : 'Camera · annotated, heads blurred'}
+            title={r?.is_sim ? 'Store view · simulator (top-down)' : r?.source.startsWith('multi') ? 'Multi-camera fusion · global IDs across cameras · heads blurred' : 'Camera · annotated, heads blurred'}
             right={r && (
               <span className="num flex items-center gap-3 font-mono normal-case tracking-normal text-ink-400">
                 <span>{r.device}</span><span>{r.model}</span>

@@ -2,7 +2,7 @@ export type LoS = 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
 export type Severity = 'critical' | 'high' | 'medium' | 'low'
 
 export interface Camera { id: string; name: string; source: string; available: boolean; calibrated: boolean; approximate: boolean; frame_url?: string }
-export interface StoreSummary { store_id: string; name: string; cameras: Camera[]; scenarios: string[]; width_m: number; height_m: number }
+export interface StoreSummary { store_id: string; name: string; cameras: Camera[]; scenarios: string[]; multi?: boolean; width_m: number; height_m: number }
 export interface ZoneCfg { id: string; name: string; type: string; polygon: number[][] }
 export interface StoreDetail extends StoreSummary {
   floorplan: { image: string; width_m: number; height_m: number }

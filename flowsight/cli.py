@@ -65,6 +65,21 @@ def sim(scenario: str = typer.Option("baseline"), store: str = "demo_store", see
     typer.echo(f"outputs in {run_dir}")
 
 
+@app.command()
+def multicam(store: str = typer.Option("caviar_multicam"), cameras: str = typer.Option("", help="e.g. cam1,cam2"),
+             out: Optional[Path] = typer.Option(None), max_seconds: Optional[float] = None):
+    """Fuse several calibrated cameras into one floor-plan analytics run (global IDs across cameras)."""
+    from flowsight.pipeline import Pipeline, default_run_dir, new_run_id
+
+    cfg, st = load_config(), load_store(store)
+    src = f"multi:{cameras}" if cameras else "multi"
+    run_dir = out or default_run_dir(new_run_id(f"{store}-multi"))
+    s = Pipeline(cfg, st, src, run_dir, speed="max", duration_s=max_seconds).run()
+    _print_summary(s)
+    typer.echo(json.dumps(s.get("fusion"), indent=2))
+    typer.echo(f"outputs in {run_dir}")
+
+
 @app.command("eval")
 def eval_cmd(seeds: int = 5, duration: float = 1800.0, workers: int = 4,
              scenarios: str = "baseline,rush_hour,blocked_aisle,ignored_promo,dead_aisle"):

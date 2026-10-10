@@ -93,3 +93,79 @@ def test_one_way_stream_is_not_a_conflict(cfg):
     hub = _stream(cfg, two_way=False)
     assert hub.density.latest["w"].counterflow == 0.0
     assert not hub.density.conflicts
+
+
+# --------------------------------------------------- multi-camera calibration
+def test_autocalib_recovers_offset_and_homography():
+    import cv2
+
+    from flowsight.geometry.autocalib import estimate
+
+    rng = np.random.default_rng(3)
+    H_true = np.array([[0.012, 0.002, -0.5], [0.0005, 0.03, -1.0], [0.00005, 0.0015, 1.0]])  # px -> m
+    Hinv = np.linalg.inv(H_true)
+    T, offset = 700, 20
+    walkers = [rng.uniform([0.5, 3], [3.5, 9], 2) for _ in range(3)]
+    vel = [rng.normal(0, 0.03, 2) for _ in range(3)]
+    truth = {}
+    for t in range(T):
+        pts = []
+        for i in range(3):
+            walkers[i] = np.clip(walkers[i] + vel[i], [0.2, 2.0], [4.0, 10.0])
+            if walkers[i][0] in (0.2, 4.0) or walkers[i][1] in (2.0, 10.0):
+                vel[i] = -vel[i]
+            pts.append(walkers[i].copy())
+        truth[t] = np.array(pts)
+    ref, new = {}, {}
+    for t in range(T):
+        clutter = rng.uniform([0, 0], [4.5, 16], (1, 2))  # someone the new camera cannot see
+        ref[t] = np.vstack([truth[t] + rng.normal(0, 0.05, truth[t].shape), clutter])
+        if t + offset < T + offset:  # new camera clock runs `offset` frames ahead
+            px = cv2.perspectiveTransform(truth[t][None], Hinv)[0] + rng.normal(0, 1.0, (3, 2))
+            junk = rng.uniform([0, 0], [380, 280], (1, 2))  # e.g. a person inside the shop
+            new[t + offset] = np.vstack([px[:2], junk])     # one walker hidden in the new view
+    r = estimate(ref, new, offsets=range(-40, 41, 4), refine=4, iters=1500)
+    assert abs(r.offset_frames - offset) <= 2  # 2 frames = 0.08 s at 25 FPS
+    test_px = cv2.perspectiveTransform(truth[100][None], Hinv)[0]
+    err = np.linalg.norm(cv2.perspectiveTransform(test_px[None], r.H)[0] - truth[100], axis=1)
+    assert err.max() < 0.25
+
+
+# ------------------------------------------------------------- fusion
+def _two_cam_walk(rng, people):
+    """people: list of (start_x, y, vx). Cam A sees x < 12, cam B sees x > 8 (overlap 8..12), separate ID spaces."""
+    from flowsight.tracking.fusion import CrossCameraFuser
+    from flowsight.tracking.track_store import TrackStore
+    from flowsight.config import TrackingCfg
+
+    fuser = CrossCameraFuser(["A", "B"], gate_m=1.0)
+    ts = TrackStore(TrackingCfg(min_track_age_s=0.0))
+    ids_per_person = [set() for _ in people]
+    for k in range(200):
+        t = round(k * 0.1, 3)
+        obs = {"A": [], "B": []}
+        for p, (x0, y, vx) in enumerate(people):
+            x = x0 + vx * t
+            if x < 12:
+                obs["A"].append((f"a{p}", x + rng.normal(0, .1), y + rng.normal(0, .1)))
+            if x > 8:
+                obs["B"].append((f"b{p}", x + rng.normal(0, .1), y + rng.normal(0, .1)))
+        fused = fuser.fuse(obs)
+        states = ts.update(t, [(f[0], f[1], f[2]) for f in fused])
+        for s in states:  # attribute global ids to the true person by nearest true position
+            d = [abs(s.y - y) for (_, y, _) in people]
+            ids_per_person[int(np.argmin(d))].add(s.id)
+    return fuser, ts, ids_per_person
+
+
+def test_fusion_hands_off_one_id_across_cameras():
+    fuser, ts, ids = _two_cam_walk(np.random.default_rng(0), [(0.0, 5.0, 1.0)])
+    assert ids == [{1}]  # one global identity from camera A through the overlap into camera B
+    s = fuser.stats.summary()
+    assert s["handoffs"] == 1 and s["cross_camera_keys"] == 1 and s["median_cross_dist_m"] < 0.3
+
+
+def test_fusion_keeps_people_apart_in_overlap():
+    fuser, ts, ids = _two_cam_walk(np.random.default_rng(1), [(0.0, 3.0, 1.0), (20.0, 6.0, -1.0)])
+    assert all(len(s) == 1 for s in ids) and ids[0] != ids[1]
+    assert fuser.stats.summary()["handoffs"] == 2

@@ -48,6 +48,7 @@ function TopBar() {
   const sources = useMemo(() => {
     if (!store) return []
     return [
+      ...(store.multi ? [{ value: 'multi', label: `Multi-camera fusion · ${store.cameras.length} cams`, disabled: false }] : []),
       ...store.cameras.map((c) => ({ value: c.id, label: `Camera · ${c.name}${c.available ? '' : ' (missing video)'}`, disabled: !c.available })),
       ...store.scenarios.map((s) => ({ value: `sim:${s}`, label: `Simulator · ${label(s)}`, disabled: false })),
     ]

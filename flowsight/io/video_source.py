@@ -25,10 +25,12 @@ class SourceInfo:
 
 
 class VideoSource:
-    def __init__(self, source: str | int, target_fps: float = 10.0, max_seconds: float | None = None):
+    def __init__(self, source: str | int, target_fps: float = 10.0, max_seconds: float | None = None,
+                 start_frame: int = 0):
         self.source = source
         self.target_fps = float(target_fps)
         self.max_seconds = max_seconds
+        self.start_frame = max(0, int(start_frame))  # skip this many source frames (multi-camera clock alignment)
         self.live = False
         if isinstance(source, int) or (isinstance(source, str) and source.isdigit()):
             self._open_arg: str | int = int(source)
@@ -66,6 +68,9 @@ class VideoSource:
         step = 1.0 / self.target_fps if self.target_fps > 0 else 0.0
         next_t = 0.0
         idx = -1
+        for _ in range(self.start_frame):
+            if not self.cap.grab():
+                break
         t0 = time.monotonic()
         while True:
             ok, frame = self.cap.read()

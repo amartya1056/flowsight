@@ -123,3 +123,11 @@ def test_zone_and_calibration_edits(client, tmp_path, monkeypatch):
     bad = dict(body, image_points=[[0, 0], [1, 1]], floor_points=[[0, 0], [1, 1]])
     assert client.put("/api/stores/demo_store/calibration", json=bad).status_code == 400
     assert fc.STORES_DIR.exists()
+
+
+def test_multicam_store_offers_fusion(client):
+    stores = {s["store_id"]: s for s in client.get("/api/stores").json()}
+    assert stores["caviar_multicam"]["multi"] is True
+    assert stores["demo_store"]["multi"] is False
+    r = client.post("/api/runs", json={"store_id": "demo_store", "source": "multi", "speed": "max"})
+    assert r.status_code == 400

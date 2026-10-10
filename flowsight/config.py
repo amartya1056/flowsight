@@ -55,6 +55,7 @@ class TrackingCfg(BaseModel):
     staff_uniform_hsv: list[list[int]] = Field(default_factory=list)
     staff_color_min_frac: float = 0.35
     staff_color_min_samples: int = 10
+    fusion_gate_m: float = 1.0
 
 
 class VisitsCfg(BaseModel):
@@ -205,6 +206,7 @@ class CameraCfg(BaseModel):
     source: str
     approximate: bool = False
     calibration: Optional[Calibration] = None
+    time_offset_frames: int = 0  # this camera is N source frames ahead of the reference camera (multi-camera sync)
 
 
 class FloorplanCfg(BaseModel):

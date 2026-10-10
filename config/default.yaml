@@ -27,6 +27,7 @@ tracking:
   staff_uniform_hsv: []           # optional uniform colours: list of [h_lo,h_hi,s_lo,s_hi,v_lo,v_hi] (OpenCV HSV)
   staff_color_min_frac: 0.35      # mean torso fraction inside a uniform range to call staff
   staff_color_min_samples: 10
+  fusion_gate_m: 1.0              # multi-camera: max floor distance to merge two cameras' observations
 visits:
   enter_min_s: 1.0                # must be inside this long to count as entry
   exit_grace_s: 1.5               # must be outside this long to count as exit (debounce)

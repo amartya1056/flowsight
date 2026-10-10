@@ -50,6 +50,7 @@ class Pipeline:
         self.live = live
         self.seed = seed
         self.is_sim = source.startswith("sim")
+        self.is_multi = source.startswith("multi")
         self.db = RunDB(self.run_dir / "flowsight.duckdb", cfg.storage.flush_every_s) if store_db else None
         self.hub = AnalyticsHub(cfg, store, self.db, cam_id=source)
         self.engine = ActionEngine(cfg, self.hub, snapshot_fn=self._snapshot, on_change=self._on_insights)
@@ -79,6 +80,8 @@ class Pipeline:
             self.tracks = TrackStore(cfg.tracking)
             self.renderer = Renderer(store, cfg, None, self.floorplan)
             self.device, self.model = "simulator", f"sim:{scenario}"
+        elif self.is_multi:
+            self._init_multi(source, model_name)
         else:
             from flowsight.io.video_source import VideoSource
             from flowsight.perception.detector_tracker import DetectorTracker
@@ -101,6 +104,31 @@ class Pipeline:
                                  "model": self.model, "calibrated": self.calibrated,
                                  "meta": json.dumps({"speed": str(speed), "seed": seed})})
 
+    def _init_multi(self, source: str, model_name: str | None) -> None:
+        """source = 'multi' (all calibrated cameras) or 'multi:cam1,cam2'."""
+        from flowsight.io.video_source import VideoSource
+        from flowsight.perception.detector_tracker import DetectorTracker
+        from flowsight.perception.footpoint import FootpointEstimator
+        from flowsight.tracking.fusion import CrossCameraFuser
+
+        ids = source.split(":", 1)[1].split(",") if ":" in source else \
+            [c.id for c in self.store.cameras if c.calibration is not None and c.source != "sim"]
+        cams = [self.store.camera(i) for i in ids]
+        min_k = min(c.time_offset_frames for c in cams)
+        self.mc = []
+        for c in cams:  # camera i's frame f_i = f_ref + k_i  ->  skip (k_i - min_k) frames to align clocks
+            vs = VideoSource(c.source, self.cfg.runtime.target_fps, max_seconds=self.duration_s,
+                             start_frame=c.time_offset_frames - min_k)
+            mp = build_mapping(c, self.cfg.geometry.assumed_person_height_m, vs.info.width)
+            self.mc.append({"cam": c, "video": vs, "mapping": mp, "det": DetectorTracker(self.cfg.runtime, model_name=model_name),
+                            "foot": FootpointEstimator(), "renderer": Renderer(self.store, self.cfg, mp, self.floorplan)})
+        self.fuser = CrossCameraFuser(ids, gate_m=self.cfg.tracking.fusion_gate_m)
+        self.tracks = TrackStore(self.cfg.tracking, metric=True)
+        self.renderer = Renderer(self.store, self.cfg, None, self.floorplan)
+        self.device = self.mc[0]["det"].device
+        self.model = f"{self.mc[0]['det'].model_name} x{len(self.mc)} cams"
+        self.frame_size = (sum(m["video"].info.width for m in self.mc), self.mc[0]["video"].info.height)
+
     # --------------------------------------------------------------- helpers
     def _load_floorplan(self) -> np.ndarray:
         p = resolve_path(self.store.floorplan.image)
@@ -114,7 +142,7 @@ class Pipeline:
             return None
         d = self.run_dir / "evidence"
         d.mkdir(exist_ok=True)
-        if self.is_sim or self.latest_frame is None or not self.calibrated:
+        if self.is_sim or self.is_multi or self.latest_frame is None or not self.calibrated:
             img = self.renderer.draw_floor(self.hub, self.hub.ts or 0.0)
             img = self.renderer.highlight_zone(img, ins.zone_id, camera=False)
         else:
@@ -146,6 +174,8 @@ class Pipeline:
         try:
             if self.is_sim:
                 self._run_sim(stop_event)
+            elif self.is_multi:
+                self._run_multi(stop_event)
             else:
                 self._run_video(stop_event)
         except Exception as e:  # keep the API alive; surface the error
@@ -257,6 +287,85 @@ class Pipeline:
             writer.release()
             self._transcode(out_path)
 
+    def _run_multi(self, stop_event) -> None:
+        cfg = self.cfg
+        writer = None
+        out_path = self.run_dir / "annotated.mp4"
+        wall0 = time.monotonic()
+        t_fps, n_fps = time.monotonic(), 0
+        iters = [iter(m["video"]) for m in self.mc]
+        n_total = min(m["video"].info.n_frames for m in self.mc)
+        while True:
+            if stop_event is not None and stop_event.is_set():
+                break
+            items = [next(it, None) for it in iters]
+            if any(x is None for x in items):
+                break
+            ts = items[0][1]
+            obs_by_cam, per_cam = {}, []
+            for m, (idx, _, frame) in zip(self.mc, items):
+                H = frame.shape[0]
+                dets = m["det"].update(frame)
+                feet, boxes = {}, {}
+                for d in dets:
+                    feet[d.track_id] = m["foot"](d.track_id, d.bbox_xyxy, H)
+                    boxes[d.track_id] = d.bbox_xyxy
+                obs = []
+                if feet:
+                    raw = list(feet)
+                    fl = m["mapping"].img_to_floor(np.array([[feet[r][0], feet[r][1]] for r in raw]))
+                    obs = [(r, float(fl[i, 0]), float(fl[i, 1])) for i, r in enumerate(raw)]
+                obs_by_cam[m["cam"].id] = obs
+                per_cam.append((m, frame, feet, boxes))
+            fused = self.fuser.fuse(obs_by_cam)
+            states = self.tracks.update(ts, [(f[0], f[1], f[2]) for f in fused])
+            self.hub.extra.update({"fusion": self.fuser.stats.summary()})
+            self._step_analytics(ts, states)
+
+            panels = []
+            for m, frame, feet, boxes in per_cam:
+                vis = frame.copy()
+                if cfg.privacy.blur_heads:
+                    blur_heads(vis, list(boxes.values()), cfg.privacy.head_fraction)
+                stable = {}
+                for r, b in boxes.items():
+                    key = self.fuser.key_of.get((m["cam"].id, r))
+                    tid = self.tracks.raw_to_id.get(key) if key is not None else None
+                    if tid is not None:
+                        stable[tid] = (b, feet[r][:2])
+                with self.state_lock:
+                    ann = m["renderer"].draw_camera(vis, stable, self.hub, ts)
+                cv2.putText(ann, m["cam"].name or m["cam"].id, (6, ann.shape[0] - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.45,
+                            (255, 255, 255), 1, cv2.LINE_AA)
+                panels.append(ann)
+            h = panels[0].shape[0]
+            with self.state_lock:
+                floor = self.renderer.draw_floor(self.hub, ts)
+            floor = cv2.resize(floor, (max(1, int(floor.shape[1] * h / floor.shape[0])), h))
+            comp = np.hstack([cv2.resize(p, (int(p.shape[1] * h / p.shape[0]), h)) for p in panels] + [floor])
+            self._hud(comp, ts)
+            self.latest_frame = comp
+            if self.write_video:
+                if writer is None:
+                    writer = cv2.VideoWriter(str(out_path), cv2.VideoWriter_fourcc(*"mp4v"), cfg.runtime.target_fps,
+                                             (comp.shape[1], comp.shape[0]))
+                writer.write(comp)
+            if not self._sample_saved and ts > 2.0 and any(p[3] for p in per_cam):
+                cv2.imwrite(str(self.run_dir / "sample.jpg"), comp)
+                self._sample_saved = True
+            self._publish(comp)
+            n_fps += 1
+            now = time.monotonic()
+            if now - t_fps >= 1.0:
+                self.proc_fps = n_fps / (now - t_fps)
+                t_fps, n_fps = now, 0
+            if n_total > 0:
+                self.progress = min(1.0, items[0][0] / n_total)
+            self._pace(ts, wall0)
+        if writer is not None:
+            writer.release()
+            self._transcode(out_path)
+
     def _hud(self, img, ts):
         k = self.hub.kpis()
         txt = (f"t={ts:6.1f}s  people={k['people_in_store']}  fps={self.proc_fps:4.1f}  "
@@ -292,7 +401,7 @@ class Pipeline:
             g = self.hub.heat.grid(kind)
             cv2.imwrite(str(self.run_dir / f"heatmap_{kind}.png"),
                         heatmap_on_floorplan(g, self.floorplan, self.cfg.geometry.heatmap_blur_sigma_cells))
-            if not self.is_sim and self.calibrated and self.latest_frame is not None:
+            if not self.is_sim and not self.is_multi and self.calibrated and self.latest_frame is not None:
                 cv2.imwrite(str(self.run_dir / f"heatmap_{kind}_camera.jpg"),
                             heatmap_on_camera(g, self.latest_frame, self.mapping.floor_to_img_matrix(),
                                               self.store.floorplan.width_m, self.store.floorplan.height_m,
@@ -305,6 +414,8 @@ class Pipeline:
             "proc_fps": round(self.proc_fps, 2), "wall_s": round(time.time() - self.started_wall, 1),
             "active_insights": len(self.engine.active), "insights_total": len(self.engine.all),
         }
+        if self.is_multi:
+            summary["fusion"] = self.fuser.stats.summary()
         if self.db is not None:
             self.db.flush()
             self.db.con.execute("UPDATE runs SET ended_at = ? WHERE run_id = ?", [time.time(), self.run_id])
