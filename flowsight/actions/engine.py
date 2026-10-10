@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import math
 import uuid
+
+import numpy as np
 from typing import Callable, Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -111,6 +113,7 @@ class ActionEngine:
         self.active: dict[str, Insight] = {}
         self.all: dict[str, Insight] = {}
         self.cooldown_until: dict[str, float] = {}
+        self.last_true: dict[str, float] = {}
         self.version = 0
         self.changed_ids: dict[str, int] = {}
         self._last_eval = -1e9
@@ -124,7 +127,9 @@ class ActionEngine:
         # 1. checkout queue
         target = self.cfg.queue.max_wait_target_s
         for q in h.queue_status():
-            W, L = q["predicted_wait_s"], q["queue_len"]
+            W_little, L = q["predicted_wait_s"], q["queue_len"]
+            W_new, over = q.get("wait_new_arrival_s"), q.get("overflow_len", 0)
+            W = max([w for w in (W_little, W_new) if w is not None], default=None)
             rising = q["rising_streak"] >= self.cfg.queue.rising_windows
             if L >= 2 and ((W is not None and W > target) or rising):
                 sc = h.baseline.score(q["zone_id"], "queue_wait", W or 0.0, exclude_last=6) if W else None
@@ -132,13 +137,16 @@ class ActionEngine:
                 rtxt = f" ({ratio:.1f}× normal)" if ratio and ratio >= 1.2 else ""
                 sev = "critical" if W and W > 1.5 * target else "high"
                 why = f"predicted wait {fmt_dur(W)}{rtxt}" if W else "queue rising"
+                if over:
+                    why += f", queue spills {over} people into the walkway"
+                L = L + over
                 out.append(_cand(
                     "checkout_queue", q["zone_id"], sev, f"Checkout queue building at {q['zone_name']}",
                     f"Open another checkout lane — {why}, {L:.0f} in queue.",
                     "floor_staff", "now",
                     f"Halving the queue cuts predicted wait to ≈{fmt_dur((W or 0) / 2)} for {L:.0f} waiting shoppers",
                     0.55 + min(0.4, q["arrival_rate_pm"] / 10), people=L,
-                    metrics={"predicted_wait_s": W, "queue_len": L, "arrival_rate_pm": q["arrival_rate_pm"],
+                    metrics={"predicted_wait_s": W, "little_wait_s": W_little, "queue_len": L, "overflow": over, "arrival_rate_pm": q["arrival_rate_pm"],
                              "service_rate_pm": q["service_rate_pm"], "rising_windows": q["rising_streak"],
                              "observed_wait_s": q["observed_wait_s"]},
                     ratio=ratio, window=f"last {fmt_dur(self.cfg.queue.rate_horizon_s)}"))
@@ -214,18 +222,21 @@ class ActionEngine:
                 0.45, metrics=w, window=f"last {win_min:.0f} min"))
 
         # 7. occupancy anomaly
+        n_s = max(1, a.anomaly_smooth_windows)
         for zid, wnd in h.density.latest.items():
             if ztype[zid] == "checkout":
                 continue
-            sc = h.baseline.score(zid, "occupancy", wnd.occupancy, exclude_last=12)
+            hist = h.baseline.data.get((zid, "occupancy"))
+            occ = float(np.mean(list(hist)[-n_s:])) if hist else wnd.occupancy  # 30 s smoothed
+            sc = h.baseline.score(zid, "occupancy", occ, exclude_last=n_s + 6)
             if sc and sc["z"] > a.anomaly_z and (sc["ratio"] or 0) >= a.anomaly_min_ratio \
-                    and wnd.occupancy >= a.anomaly_min_occupancy:
+                    and occ >= a.anomaly_min_occupancy:
                 out.append(_cand(
                     "occupancy_anomaly", zid, "high", f"Unusual crowd at {zname[zid]}",
                     f"Unusual crowd at {zname[zid]} — {sc['ratio']:.1f}× normal. Send a staff member.",
                     "floor_staff", "now", "Staff presence prevents spill-over congestion and lost sales",
-                    min(0.95, 0.5 + sc["z"] / 20), people=round(wnd.occupancy),
-                    metrics={"occupancy": round(wnd.occupancy, 1), "normal": round(sc["mean"], 2), "z": round(sc["z"], 1)},
+                    min(0.95, 0.5 + sc["z"] / 20), people=round(occ),
+                    metrics={"occupancy": round(occ, 1), "normal": round(sc["mean"], 2), "z": round(sc["z"], 1)},
                     ratio=sc["ratio"], window=f"{self.cfg.density.window_s:.0f}s window"))
 
         # 8. long stationary shopper in service / aisle zone
@@ -259,6 +270,7 @@ class ActionEngine:
             if key in seen:
                 continue
             seen.add(key)
+            self.last_true[key] = now
             prio = SEV_W[c["severity"]] * c["confidence"] * (1 + math.log1p(c["people_affected"]))
             if key in self.active:
                 ins = self.active[key]
@@ -286,7 +298,8 @@ class ActionEngine:
             self.all[ins.id] = ins
             changed.append(ins)
 
-        for key in [k for k in self.active if k not in seen]:
+        grace = self.acfg.resolve_grace_s  # hysteresis: condition must stay clear before resolving
+        for key in [k for k in self.active if k not in seen and now - self.last_true.get(k, -1e18) >= grace]:
             ins = self.active.pop(key)
             ins.status, ins.resolved_ts, ins.updated_ts = "resolved", now, now
             self.cooldown_until[key] = now + self.acfg.cooldown_s

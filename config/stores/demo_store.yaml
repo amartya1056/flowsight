@@ -25,7 +25,7 @@ zones:
   - { id: z_aisle6,    name: Aisle 6 Household,    type: aisle,    polygon: [[6.5, 7.5], [8.5, 7.5], [8.5, 11.5], [6.5, 11.5]] }
   - { id: z_pharmacy,  name: Pharmacy Counter,     type: service,  polygon: [[10.0, 8.8], [12.5, 8.8], [12.5, 11.5], [10.0, 11.5]] }
   - { id: z_aisle7,    name: Aisle 7 Pet Care,     type: aisle,    polygon: [[13.6, 9.6], [16.0, 9.6], [16.0, 11.6], [13.6, 11.6]] }
-  - { id: z_checkout,  name: Checkout,             type: checkout, polygon: [[15.5, 4.5], [19.5, 4.5], [19.5, 7.5], [15.5, 7.5]] }
+  - { id: z_checkout,  name: Checkout,             type: checkout, polygon: [[15.5, 4.5], [19.5, 4.5], [19.5, 7.5], [15.5, 7.5]], overflow: [z_walk_east] }
 # Static fixtures drawn on the floor plan (not analytics zones)
 fixtures:
   - { name: Shelf, rect: [2.4, 0.5, 0.5, 4.0] }
@@ -75,7 +75,7 @@ sim:
   destinations:                 # zone -> access node, attractiveness (prob. on shopping list), dwell lognormal
     z_aisle1:   {node: A1, attract: 0.45, dwell_median_s: 35, dwell_sigma: 0.5}
     z_aisle2:   {node: A2, attract: 0.40, dwell_median_s: 30, dwell_sigma: 0.5}
-    z_promo1:   {node: P1, attract: 0.35, dwell_median_s: 12, dwell_sigma: 0.4}
+    z_promo1:   {node: P1, attract: 0.45, dwell_median_s: 12, dwell_sigma: 0.4}
     z_aisle3:   {node: A3, attract: 0.60, dwell_median_s: 45, dwell_sigma: 0.5}
     z_electro:  {node: EL, attract: 0.25, dwell_median_s: 60, dwell_sigma: 0.6}
     z_aisle5:   {node: A5, attract: 0.50, dwell_median_s: 30, dwell_sigma: 0.5}

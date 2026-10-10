@@ -43,7 +43,7 @@ attention:
   ignored_stopping_power: 0.08    # exposures that convert to stops
   hot_quantile: 0.9               # top-decile stopping power
   hot_min_stopping_power: 0.15
-  min_exposures: 15               # need this many exposures before calling a zone IGNORED/HOT
+  min_exposures: 30               # need this many exposures before calling a zone IGNORED/HOT
   merch_zone_types: [aisle, promo, service]
 flow:
   exclude_types: [walkway]        # walkways are transit, not destinations
@@ -62,6 +62,8 @@ actions:
   cooldown_s: 300
   max_active: 12
   eval_every_s: 5
+  resolve_grace_s: 30             # condition must stay clear this long before auto-resolve
+  anomaly_smooth_windows: 6       # anomaly scored on the mean of the last N density windows (30 s)
   recurring_bottleneck_count: 3   # >= this many per hour = recurring
   anomaly_z: 3.0
   anomaly_min_ratio: 2.0

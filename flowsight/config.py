@@ -78,7 +78,7 @@ class AttentionCfg(BaseModel):
     ignored_stopping_power: float = 0.08
     hot_quantile: float = 0.9
     hot_min_stopping_power: float = 0.15
-    min_exposures: int = 15
+    min_exposures: int = 30
     merch_zone_types: list[str] = Field(default_factory=lambda: ["aisle", "promo", "service"])
 
 
@@ -105,6 +105,8 @@ class ActionsCfg(BaseModel):
     cooldown_s: float = 300
     max_active: int = 12
     eval_every_s: float = 5
+    resolve_grace_s: float = 30
+    anomaly_smooth_windows: int = 6
     recurring_bottleneck_count: int = 3
     anomaly_z: float = 3.0
     anomaly_min_ratio: float = 2.0
@@ -202,6 +204,7 @@ class ZoneCfg(BaseModel):
     name: str
     type: ZoneType
     polygon: list[list[float]]
+    overflow: list[str] = Field(default_factory=list)  # checkout only: zones a long queue spills into
 
 
 class FixtureCfg(BaseModel):

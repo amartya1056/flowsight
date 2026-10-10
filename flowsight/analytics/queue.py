@@ -48,6 +48,7 @@ class QueueAnalyzer:
         self.rising = 0
         self.on_window = on_window
         self.current_len = 0
+        self.current_overflow = 0
 
     def on_entry(self, ts: float) -> None:
         self.arrivals.append(ts)
@@ -55,7 +56,7 @@ class QueueAnalyzer:
     def on_exit(self, ts: float, dwell_s: float) -> None:
         self.departures.append((ts, dwell_s))
 
-    def sample(self, ts: float, queue_len: int) -> None:
+    def sample(self, ts: float, queue_len: int, overflow_len: int = 0) -> None:
         w = int(math.floor((ts - self.t_start) / self.cfg.window_s + 1e-9))
         if self.window_idx is None:
             self.window_idx = w
@@ -65,6 +66,7 @@ class QueueAnalyzer:
         self.l_sum += queue_len
         self.l_n += 1
         self.current_len = queue_len
+        self.current_overflow = overflow_len
 
     def rates(self, now: float) -> tuple[float, float, float]:
         """(lambda/s, mu/s, horizon_s) over the trailing horizon (shorter at the start of a run)."""
@@ -117,8 +119,12 @@ class QueueAnalyzer:
         L = last.queue_len if last else float(self.current_len)
         W = self.predicted_wait(L, now)
         trend = [round(w.queue_len, 2) for w in self.windows[-10:]]
+        # wait for a shopper joining now = everyone ahead (incl. spill-over outside the zone) / service rate
+        ahead = L + self.current_overflow
+        w_new = (ahead / mu) if mu > 0 else None
         return {"zone_id": self.zone_id, "queue_len": round(L, 2), "queue_len_now": self.current_len,
                 "arrival_rate_pm": round(lam * 60, 2), "service_rate_pm": round(mu * 60, 2),
                 "predicted_wait_s": None if W is None or not np.isfinite(W) else round(W, 1),
                 "observed_wait_s": self.observed_wait(now), "rising_streak": self.rising,
-                "utilisation": (lam / mu) if mu > 0 else None, "trend": trend}
+                "utilisation": (lam / mu) if mu > 0 else None, "trend": trend,
+                "overflow_len": self.current_overflow, "wait_new_arrival_s": None if w_new is None else round(w_new, 1)}

@@ -127,11 +127,14 @@ def test_engine_dedup_resolve_and_cooldown(cfg):
     assert len([i for i in eng.all.values() if i.type == "ignored_zone"]) == 1  # dedup
     hub.attention_latest = _attention({"promo": ("NORMAL", 212, 40)})
     eng.evaluate(110.0, force=True)
+    assert len(eng.active) == 1  # hysteresis: still active within resolve_grace_s
+    t_res = 105.0 + cfg.actions.resolve_grace_s
+    eng.evaluate(t_res, force=True)
     assert not eng.active and next(iter(eng.all.values())).status == "resolved"  # auto-resolve
     hub.attention_latest = _attention({"promo": ("IGNORED", 212, 6)})
-    eng.evaluate(120.0, force=True)
+    eng.evaluate(t_res + 10, force=True)
     assert not eng.active  # cooldown
-    eng.evaluate(110.0 + cfg.actions.cooldown_s + 1, force=True)
+    eng.evaluate(t_res + cfg.actions.cooldown_s + 1, force=True)
     assert len(eng.active) == 1
 
 

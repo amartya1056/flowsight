@@ -36,6 +36,7 @@ class AnalyticsHub:
         self.attention = AttentionAnalyzer(self.zones, cfg.attention)
         self.queues = {z.id: QueueAnalyzer(z.id, cfg.queue, t_start, on_window=self._on_queue_window)
                        for z in self.zones if z.type == cfg.queue.service_zone_type}
+        self.overflow = {z.id: [o for o in z.overflow if o in self.ztype] for z in store.zones if z.overflow}
         self.baseline = RollingBaseline(cfg.baseline.history_windows, cfg.baseline.min_samples, cfg.baseline.min_std)
         self.ts: float | None = None
         self.n_frames = 0
@@ -105,10 +106,15 @@ class AnalyticsHub:
         self.heat.update(ts, dt, xs, ys, sp)
         self.density.update(ts, dt, ids, sp, inside)
         thr = self.cfg.visits.engaged_speed_mps
+        slow = sp < thr
         for j, zid in enumerate(self.zone_ids):
             q = self.queues.get(zid)
             if q is not None:
-                q.sample(ts, int((inside[:, j] & (sp < thr)).sum()) if len(ids) else 0)
+                over = 0
+                for oz in self.overflow.get(zid, ()):
+                    k = self.zone_ids.index(oz)
+                    over += int((inside[:, k] & slow & ~inside[:, j]).sum()) if len(ids) else 0
+                q.sample(ts, int((inside[:, j] & slow).sum()) if len(ids) else 0, over)
 
         trail_n = int(self.cfg.render.trail_s * max(self.cfg.runtime.target_fps, 1)) + 1
         for t in mature:
