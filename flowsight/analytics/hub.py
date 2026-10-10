@@ -35,6 +35,7 @@ class AnalyticsHub:
         self.density = DensityAnalyzer(self.zones, cfg.density, on_window=self._on_window,
                                        on_bottleneck=self._on_bottleneck)
         self.attention = AttentionAnalyzer(self.zones, cfg.attention)
+        self.density.on_conflict = self._on_conflict
         self.queues = {z.id: QueueAnalyzer(z.id, cfg.queue, t_start, on_window=self._on_queue_window)
                        for z in self.zones if z.type == cfg.queue.service_zone_type}
         self.overflow = {z.id: [o for o in z.overflow if o in self.ztype] for z in store.zones if z.overflow}
@@ -81,6 +82,14 @@ class AnalyticsHub:
         if kind == "end" and self.db is not None:
             self.db.add("bottlenecks", {k: v for k, v in b.as_dict().items() if k != "active"})
 
+    def _on_conflict(self, c):
+        if self.db is not None:
+            self.db.add("conflicts", {k: v for k, v in c.as_dict().items() if k != "active"})
+
+    def conflicts(self) -> list[dict]:
+        now = self.ts or 0.0
+        return [dict(c.as_dict(now), zone_name=self.zname[c.zone_id]) for c in self.density.conflicts]
+
     def _on_queue_window(self, w):
         if self.db is not None:
             self.db.add("queue_windows", w.as_dict())
@@ -114,7 +123,8 @@ class AnalyticsHub:
 
         self.visits.update(ts, ids, sp, inside, exposed)
         self.heat.update(ts, dt, xs, ys, sp)
-        self.density.update(ts, dt, ids, sp, inside)
+        self.density.update(ts, dt, ids, sp, inside, vx=np.array([t.vx for t in mature], float),
+                            vy=np.array([t.vy for t in mature], float))
         thr = self.cfg.visits.engaged_speed_mps
         slow = sp < thr
         for j, zid in enumerate(self.zone_ids):

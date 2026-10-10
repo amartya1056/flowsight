@@ -58,3 +58,38 @@ def test_staff_filter_can_be_disabled(cfg):
     for k in range(50):
         hub.step(k * DT, [ts_state(1, k * DT, 1, 1)])
     assert len(hub.people()) == 1
+
+
+# ------------------------------------------------------------ counter-flow
+def _stream(cfg, two_way: bool):
+    store = make_store([{"id": "w", "name": "W", "type": "walkway", "polygon": rect(0, 0, 10, 2)}])
+    hub = AnalyticsHub(cfg, store)
+    for k in range(800):  # 80 s, 12 walkers at 0.8 m/s wrapping around a 10 x 2 m walkway (LoS C)
+        t = round(k * DT, 3)
+        states = []
+        for i in range(12):
+            d = -1 if (two_way and i % 2) else 1
+            x = (i * 0.83 + d * 0.8 * t) % 10
+            states.append(TrackState(id=i + 1, ts=t, x=x, y=0.3 + 0.12 * i, speed=0.8, heading=0.0,
+                                     vx=0.8 * d, vy=0.0, age=30, mature=True))
+        hub.step(t, states)
+    return hub
+
+
+def test_counterflow_conflict_detected_for_two_way_stream(cfg):
+    hub = _stream(cfg, two_way=True)
+    w = hub.density.latest["w"]
+    assert w.counterflow is not None and w.counterflow > 0.4
+    assert w.direction_entropy is not None and w.direction_entropy < 0.5  # two opposite bins
+    assert len(hub.density.conflicts) == 1 and hub.density.conflicts[0].peak_los in ("C", "D")
+    from flowsight.actions.engine import ActionEngine
+
+    eng = ActionEngine(cfg, hub)
+    eng.evaluate(hub.ts, force=True)
+    assert any(i.type == "counter_flow" for i in eng.active.values())
+
+
+def test_one_way_stream_is_not_a_conflict(cfg):
+    hub = _stream(cfg, two_way=False)
+    assert hub.density.latest["w"].counterflow == 0.0
+    assert not hub.density.conflicts

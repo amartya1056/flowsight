@@ -44,6 +44,12 @@ density:
   bottleneck_zone_types: [walkway, entrance, aisle]
   aisle_speed_rule_min_los: C       # in aisles slow = browsing; speed rule also needs crowding
   bottleneck_end_windows: 2         # condition must be clear this many windows to end (no fragmenting)
+  counterflow_min_ratio: 0.3        # share of walkers against the zone's dominant direction (0 = one-way, 0.5 = even)
+  counterflow_min_los: C            # only a conflict when it is also crowded
+  counterflow_min_samples: 30       # moving person-samples per window (= 3 person-seconds at 10 FPS)
+  moving_speed_mps: 0.3             # only people faster than this have a meaningful heading
+  counterflow_zone_types: [walkway, entrance]   # dead-end aisles are two-way by nature
+  counterflow_min_duration_s: 30
 attention:
   window_min: 15
   unvisited_traffic_share: 0.2    # < 20% of median zone exposure

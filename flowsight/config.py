@@ -77,6 +77,12 @@ class DensityCfg(BaseModel):
     bottleneck_zone_types: list[str] = Field(default_factory=lambda: ["walkway", "entrance", "aisle"])
     aisle_speed_rule_min_los: str = "C"
     bottleneck_end_windows: int = 2
+    counterflow_min_ratio: float = 0.3
+    counterflow_min_los: str = "C"
+    counterflow_min_samples: int = 30
+    moving_speed_mps: float = 0.3
+    counterflow_zone_types: list[str] = Field(default_factory=lambda: ["walkway", "entrance"])
+    counterflow_min_duration_s: float = 30
 
 
 class AttentionCfg(BaseModel):

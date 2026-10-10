@@ -21,7 +21,10 @@ SCHEMA = {
     "visits": "track_id INTEGER, zone_id VARCHAR, t_enter DOUBLE, t_exit DOUBLE, dwell_s DOUBLE, "
               "engaged_s DOUBLE, is_stop BOOLEAN, mean_speed DOUBLE",
     "zone_windows": "zone_id VARCHAR, window_start DOUBLE, window_end DOUBLE, occupancy DOUBLE, density DOUBLE, "
-                    "los VARCHAR, mean_speed DOUBLE, flow_per_min DOUBLE, free_flow_mps DOUBLE",
+                    "los VARCHAR, mean_speed DOUBLE, flow_per_min DOUBLE, free_flow_mps DOUBLE, "
+                    "direction_entropy DOUBLE, counterflow DOUBLE",
+    "conflicts": "zone_id VARCHAR, t_start DOUBLE, t_end DOUBLE, duration_s DOUBLE, peak_counterflow DOUBLE, "
+                 "peak_los VARCHAR, people_affected INTEGER",
     "bottlenecks": "zone_id VARCHAR, t_start DOUBLE, t_confirmed DOUBLE, t_end DOUBLE, duration_s DOUBLE, "
                    "peak_density DOUBLE, peak_los VARCHAR, people_affected INTEGER, time_lost_s DOUBLE, reason VARCHAR",
     "attention_windows": "ts DOUBLE, zone_id VARCHAR, exposures INTEGER, entries INTEGER, stops INTEGER, "

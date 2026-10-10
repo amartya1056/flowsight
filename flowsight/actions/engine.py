@@ -172,6 +172,27 @@ class ActionEngine:
                          "reason": b.reason},
                 window=f"since {fmt_dur(b.t_start)}"))
 
+        # 2b. counter-flow conflicts (two-way streams in a crowded walkway)
+        recent_cf: dict[str, int] = {}
+        for c in h.density.conflicts:
+            if c.t_start >= now - 3600:
+                recent_cf[c.zone_id] = recent_cf.get(c.zone_id, 0) + 1
+        for c in [c for c in h.density.conflict_active.values() if c is not None]:
+            dur = now - c.t_start
+            n_hr = recent_cf.get(c.zone_id, 1)
+            if dur < 60 and n_hr < 2:  # layout advice only for sustained or recurring conflicts
+                continue
+            out.append(_cand(
+                "counter_flow", c.zone_id, "medium", f"Two-way flow conflict in {zname[c.zone_id]}",
+                f"Two-way conflict in {zname[c.zone_id]}: {c.peak_counterflow:.0%} of walkers move against the main "
+                f"flow at LoS {c.peak_los} for {fmt_dur(dur)}" + (f" ({n_hr}× this hour)" if n_hr >= 2 else "")
+                + ". Add one-way guidance or a centre divider.",
+                "layout_planning", "this_week",
+                "Separating opposing streams restores walking speed and reduces bumps", 0.5 + min(0.4, dur / 300),
+                people=len(c.people), metrics={"counterflow": round(c.peak_counterflow, 2), "peak_los": c.peak_los,
+                                               "duration_s": round(dur), "people_affected": len(c.people)},
+                window=f"since {fmt_dur(c.t_start)}"))
+
         # 3. recurring bottlenecks
         recent: dict[str, list] = {}
         for b in h.density.bottlenecks:
