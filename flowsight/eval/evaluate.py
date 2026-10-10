@@ -56,6 +56,7 @@ def run_one(scenario: str, seed: int, duration: float) -> dict:
     from flowsight.tracking.track_store import TrackStore
 
     cfg, store = load_config(), load_store("demo_store")
+    duration = float((store.sim.get("scenarios", {}).get(scenario) or {}).get("duration_s", duration))
     sim = Simulator(store, cfg, scenario=scenario, seed=seed, duration_s=duration)
     meas = AnalyticsHub(cfg, store)
     orac = AnalyticsHub(cfg, store)
@@ -71,7 +72,7 @@ def run_one(scenario: str, seed: int, duration: float) -> dict:
             if sid is not None:
                 votes[(sid, sim.obs_to_true[oid])] += 1
         meas.step(ts, states, tstore.pop_expired())
-        clean = sim.clean_states()
+        clean = [s for s in sim.clean_states() if s.id not in sim.staff_ids]  # ground truth: shoppers only
         now_ids = {s.id for s in clean}
         gone = [SimpleNamespace(id=i, last_ts=present[i], path_len=0.0) for i in list(present) if i not in now_ids]
         for s in clean:
@@ -91,6 +92,8 @@ def run_one(scenario: str, seed: int, duration: float) -> dict:
         if n > best.get(sid, (0, -1))[0]:
             best[sid] = (n, tid)
     s2t = {sid: tid for sid, (n, tid) in best.items()}
+
+    staff_visits_left = sum(1 for v in meas.visits.visits if s2t.get(v.track_id) in sim.staff_ids)
 
     # ---- visits & dwell
     gt_v = [(v.track_id, v.zone_id, v.t_enter, v.t_exit, v) for v in orac.visits.visits]
@@ -171,6 +174,8 @@ def run_one(scenario: str, seed: int, duration: float) -> dict:
         "zone_oracle_agreement": oracle_agree, "zone_status": detail,
         "queue_wait_mae_s": float(np.mean(q_err)) if q_err else None, "queue_blocks": len(q_err),
         "gt_checkout_visits": len(gt_co),
+        "staff_agents": len(sim.staff_ids), "staff_tracks_flagged": len(meas.staff.staff),
+        "staff_visits_purged": meas.staff_visits_purged, "staff_visits_left": staff_visits_left,
     }
 
 
@@ -254,6 +259,15 @@ def write_report(df: pd.DataFrame, path: Path, seeds: int, duration: float, wall
     for sc, h in hits.items():
         z, st = next(iter(EXPECTED[sc].items()))
         lines.append(tgt(f"{sc}: {z} classified {st}", f"{h:.0%} of seeds", h >= 0.999))
+    st = df[df.get("staff_agents", 0) > 0] if "staff_agents" in df else df.iloc[0:0]
+    if len(st):
+        lines += ["", "## Staff filtering (with_staff scenario)", "",
+                  f"{int(st.staff_agents.iloc[0])} simulated employees restock zones for the whole run "
+                  f"({st.duration_s.iloc[0] / 60:.0f} min). Ground truth contains shoppers only.", "",
+                  "| Seed | Staff tracks flagged | Staff visits purged | Staff visits left in analytics | Visit F1 |",
+                  "|---|---|---|---|---|"]
+        lines += [f"| {r.seed} | {r.staff_tracks_flagged} | {r.staff_visits_purged} | {r.staff_visits_left} | "
+                  f"{r.visit_f1:.3f} |" for _, r in st.iterrows()]
     lines += ["", "## Per-run zone status (measured)", "",
               "| Scenario | Seed | " + " | ".join(sorted(df.zone_status.iloc[0])) + " |",
               "|---|---|" + "---|" * len(df.zone_status.iloc[0])]

@@ -22,7 +22,11 @@ tracking:
   stitch_max_gap_s: 2.0           # re-link fragmented tracks
   stitch_max_dist_m: 1.2
   stitch_max_dist_px: 80          # used when running uncalibrated in pixel space
-  staff_long_presence_s: 1800     # [STRETCH] flag likely staff
+  staff_filter: true              # exclude likely staff from shopper analytics
+  staff_long_presence_s: 1800     # on the floor longer than this = staff
+  staff_uniform_hsv: []           # optional uniform colours: list of [h_lo,h_hi,s_lo,s_hi,v_lo,v_hi] (OpenCV HSV)
+  staff_color_min_frac: 0.35      # mean torso fraction inside a uniform range to call staff
+  staff_color_min_samples: 10
 visits:
   enter_min_s: 1.0                # must be inside this long to count as entry
   exit_grace_s: 1.5               # must be outside this long to count as exit (debounce)

@@ -96,3 +96,4 @@ sim:
     blocked_aisle: {arrival_rate_pm: 5.0, obstacles: [{rect: [9.6, 5.0, 1.8, 2.0], max_speed: 0.3, from_s: 300, to_s: 1500}]}
     ignored_promo: {attract: {z_promo1: 0.0}}
     dead_aisle: {attract: {z_aisle7: 0.01}}
+    with_staff: {staff: 2, duration_s: 2700}

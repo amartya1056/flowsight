@@ -85,6 +85,13 @@ class RunDB:
             self.con.execute("INSERT INTO insights SELECT * FROM _ins_df")
             self.con.unregister("_ins_df")
 
+    def delete_track(self, track_id: int) -> None:
+        """Remove a track's visits and trajectory (e.g. it was identified as staff)."""
+        with self.lock:
+            for t in ("visits", "track_points"):
+                self._buf[t] = [r for r in self._buf[t] if r.get("track_id") != track_id]
+                self.con.execute(f"DELETE FROM {t} WHERE track_id = ?", [int(track_id)])
+
     def replace_table(self, table: str, rows: list[dict]) -> None:
         with self.lock:
             self.con.execute(f"DELETE FROM {table}")

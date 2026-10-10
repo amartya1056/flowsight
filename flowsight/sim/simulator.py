@@ -49,6 +49,7 @@ class Agent:
     obs_id: int = 0
     silent_until: float = -1.0
     t_spawn: float = 0.0
+    staff: bool = False
 
 
 def _merge(base: dict, over: dict) -> dict:
@@ -113,6 +114,8 @@ class Simulator:
         self.gt_queue: list[dict] = []
         self._q_join: dict[int, float] = {}
         self.route_cache: dict = {}
+        self.staff_ids: set[int] = set()
+        self._spawn_staff(int(lay.get("staff", 0) or 0))
 
     # ----------------------------------------------------------- utilities
     def arrival_rate_pm(self, t: float) -> float:
@@ -165,8 +168,24 @@ class Simulator:
         c = p.centroid
         return float(c.x), float(c.y)
 
+    def _spawn_staff(self, n: int) -> None:
+        """Employees: on the floor for the whole run, restocking zone after zone, never checking out."""
+        for _ in range(n):
+            sx, sy = self.lay["spawn"]
+            ag = Agent(id=self._next_agent, x=sx, y=sy, v0=float(self.rng.uniform(0.9, 1.2)),
+                       lane=float(self.rng.uniform(-0.4, 0.4)), plan=[], buyer=False, staff=True)
+            self._next_agent += 1
+            ag.obs_id = self._new_obs(ag)
+            ag.path = [self._pt("E", ag)]
+            ag.goal = ("start",)
+            self.agents.append(ag)
+            self.staff_ids.add(ag.id)
+
     def _plan_next(self, ag: Agent, from_node: str) -> None:
         """Set ag.path / ag.goal towards the next item on its list, checkout, or the exit."""
+        if ag.staff and not ag.plan:
+            zs = list(self.dest)
+            ag.plan = [zs[i] for i in self.rng.choice(len(zs), size=2, replace=False)]
         if ag.plan:
             z = ag.plan.pop(0)
             tgt = self.dest[z]["node"]
@@ -260,6 +279,8 @@ class Simulator:
         elif g == "browse":
             _, z, node = ag.goal
             med, sig = self.dest[z]["dwell_median_s"], self.dest[z]["dwell_sigma"]
+            if ag.staff:
+                med, sig = 60.0, 0.4  # restocking
             ag.state, ag.zone, ag.node = BROWSE, z, node
             ag.browse_until = self.t + float(med * math.exp(self.rng.normal(0, sig)))
             ag.pause_until = self.t + float(self.rng.uniform(2, 6))

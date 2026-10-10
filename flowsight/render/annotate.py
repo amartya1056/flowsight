@@ -125,7 +125,11 @@ class Renderer:
             tr.append((int(foot[0]), int(foot[1])))
             if len(tr) > 1:
                 cv2.polylines(img, [np.array(tr, np.int32)], False, col, 2, cv2.LINE_AA)
-            txt = f"#{tid}" + (f" {dwell[tid]:.0f}s" if tid in dwell else "")
+            is_staff = hub is not None and hub.staff.is_staff(tid)
+            if is_staff:
+                col = (150, 150, 150)
+                cv2.rectangle(img, (x1, y1), (x2, y2), col, 2)
+            txt = "STAFF" if is_staff else f"#{tid}" + (f" {dwell[tid]:.0f}s" if tid in dwell else "")
             _label(img, txt, (x1, max(12, y1 - 4)), 0.45, (255, 255, 255), col)
         for tid in [k for k in self.pixel_trails if k not in dets_by_track]:
             del self.pixel_trails[tid]

@@ -229,6 +229,9 @@ class Pipeline:
                 tid = self.tracks.raw_to_id.get(r)
                 if tid is not None:
                     stable[tid] = (b, feet[r][:2])
+                    if cfg.tracking.staff_uniform_hsv:
+                        with self.state_lock:
+                            self.hub.observe_staff_color(tid, frame, b)  # raw frame: colour only, torso only
             self.latest_frame = vis.copy()
             with self.state_lock:
                 ann = self.renderer.draw_camera(vis, stable, self.hub, ts)

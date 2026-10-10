@@ -17,6 +17,7 @@ from flowsight.analytics.heatmap import Heatmap
 from flowsight.analytics.queue import QueueAnalyzer
 from flowsight.analytics.visits import VisitTracker
 from flowsight.geometry.zones import ZoneSet
+from flowsight.tracking.staff import StaffClassifier
 
 
 class AnalyticsHub:
@@ -51,6 +52,9 @@ class AnalyticsHub:
         self._last_attention_db = -1e9
         self.peak_people = 0
         self.extra: dict = {}  # pipeline-level counters (stitches, fps, ...)
+        self.staff = StaffClassifier(cfg.tracking)
+        self.staff_on_floor = 0
+        self.staff_visits_purged = 0
 
     # ------------------------------------------------------------ callbacks
     def _on_visit(self, v):
@@ -92,6 +96,12 @@ class AnalyticsHub:
         self.ts = ts
         self.n_frames += 1
         mature = [t for t in tracks if t.mature]
+        if self.cfg.tracking.staff_filter:
+            for t in mature:
+                if self.staff.check_presence(t.id, t.age):
+                    self.mark_staff(t.id)
+            self.staff_on_floor = sum(1 for t in mature if self.staff.is_staff(t.id))
+            mature = [t for t in mature if not self.staff.is_staff(t.id)]
         self.tracks = mature
         self.peak_people = max(self.peak_people, len(mature))
         ids = [t.id for t in mature]
@@ -151,6 +161,19 @@ class AnalyticsHub:
                     {"ts": ts, **{k: r.get(k) for k in ("zone_id", "exposures", "entries", "stops", "engaged_s",
                                                          "stopping_power", "status")}}
                     for r in self.attention_latest.values()])
+
+    def mark_staff(self, tid: int) -> None:
+        """A track was identified as staff: purge it from shopper analytics retroactively."""
+        self.staff_visits_purged += self.visits.purge_track(tid)
+        for d in (self.flow.track_first, self.flow.track_last, self.flow.track_len, self.trails,
+                  self.stationary_since, self._last_pt):
+            d.pop(tid, None)
+        if self.db is not None:
+            self.db.delete_track(tid)
+
+    def observe_staff_color(self, tid: int, frame, bbox) -> None:
+        if self.cfg.tracking.staff_filter and self.staff.observe_color(tid, frame, bbox):
+            self.mark_staff(tid)
 
     def compute_attention(self, window_s: float | None = None) -> dict:
         now = self.ts or 0.0
@@ -215,6 +238,8 @@ class AnalyticsHub:
             "bottlenecks_total": len(self.density.bottlenecks),
             "conversion": flow["conversion"],
             "visits_total": len(self.visits.visits),
+            "staff_on_floor": self.staff_on_floor, "staff_tracks": len(self.staff.staff),
+            "staff_visits_purged": self.staff_visits_purged,
             **self.extra,
         }
 

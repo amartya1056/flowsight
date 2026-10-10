@@ -141,6 +141,13 @@ class ZonePresence:
         for key in list(self.states):
             self._close(key)
 
+    def forget_track(self, tid: int) -> None:
+        """Drop all state of a track without emitting visits (used when a track turns out to be staff)."""
+        for zid in list(self._by_track.get(tid, ())):
+            self.states.pop((tid, zid), None)
+        self._by_track.pop(tid, None)
+        self._last_ts.pop(tid, None)
+
     def open_items(self) -> list[Visit]:
         return [self._as_visit(t, z, st, open_=True) for (t, z), st in self.states.items() if st.confirmed]
 
@@ -190,6 +197,16 @@ class VisitTracker:
     def finalize(self) -> None:
         self.presence.finalize()
         self.exposure.finalize()
+
+    def purge_track(self, tid: int) -> int:
+        """Retroactively remove every visit/entry/exposure of a track. Returns the number of visits removed."""
+        n = sum(1 for v in self.visits if v.track_id == tid)
+        self.visits = [v for v in self.visits if v.track_id != tid]
+        self.entries = [e for e in self.entries if e[1] != tid]
+        self.exposures = [e for e in self.exposures if e[1] != tid]
+        self.presence.forget_track(tid)
+        self.exposure.forget_track(tid)
+        return n
 
     def open_visits(self) -> list[Visit]:
         return self.presence.open_items()
