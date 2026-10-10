@@ -1,0 +1,96 @@
+# FlowSight — all tunables live here. Store-specific geometry lives in config/stores/*.yaml
+runtime:
+  target_fps: 10              # analytics rate; skip frames from source accordingly
+  device: auto                # auto | cpu | cuda | mps
+  model_gpu: yolo11s.pt
+  model_cpu: yolo11n.pt
+  conf: 0.35
+  iou: 0.5
+  imgsz: 960
+  tracker: bytetrack.yaml     # or botsort.yaml
+  models_dir: models          # where YOLO weights are cached
+geometry:
+  heatmap_cell_m: 0.25
+  heatmap_blur_sigma_cells: 1.5
+  assumed_person_height_m: 1.70   # for auto-scale fallback when uncalibrated
+tracking:
+  smoothing: ema                  # ema | kalman (kalman not implemented -> falls back to ema)
+  ema_alpha: 0.4
+  speed_window_s: 1.0             # speed = displacement of smoothed position over this window
+  min_track_age_s: 1.0            # ignore tracks shorter than this
+  stitch_max_gap_s: 2.0           # re-link fragmented tracks
+  stitch_max_dist_m: 1.2
+  stitch_max_dist_px: 80          # used when running uncalibrated in pixel space
+  staff_long_presence_s: 1800     # [STRETCH] flag likely staff
+visits:
+  enter_min_s: 1.0                # must be inside this long to count as entry
+  exit_grace_s: 1.5               # must be outside this long to count as exit (debounce)
+  engaged_speed_mps: 0.3          # below this = browsing/engaged
+  stop_min_s: 3.0                 # a "stop" = engaged >= this long
+  exposure_buffer_m: 1.5          # zone polygon dilated by this = exposure area
+density:
+  window_s: 5
+  bottleneck_min_duration_s: 20
+  speed_drop_ratio: 0.5           # mean speed < 50% of zone free-flow baseline
+  min_occupancy_for_speed_rule: 3
+  default_free_flow_mps: 1.1      # used until a zone has learned its own baseline
+  min_baseline_samples: 50
+  fruin_los_m2_per_person: {A: 3.3, B: 2.3, C: 1.4, D: 0.9, E: 0.5}   # F below E
+  bottleneck_zone_types: [walkway, entrance, aisle]
+attention:
+  window_min: 15
+  unvisited_traffic_share: 0.2    # < 20% of median zone exposure
+  ignored_stopping_power: 0.08    # exposures that convert to stops
+  hot_quantile: 0.9               # top-decile stopping power
+  hot_min_stopping_power: 0.15
+  min_exposures: 15               # need this many exposures before calling a zone IGNORED/HOT
+  merch_zone_types: [aisle, promo, service]
+flow:
+  exclude_types: [walkway]        # walkways are transit, not destinations
+  sankey_max_steps: 5
+queue:
+  service_zone_type: checkout
+  max_wait_target_s: 180
+  window_s: 30
+  rate_horizon_s: 300             # lambda / mu estimated over this trailing horizon
+  rising_windows: 3
+baseline:
+  history_windows: 360            # rolling history per zone/metric (x density.window_s)
+  min_samples: 24
+  min_std: 0.5
+actions:
+  cooldown_s: 300
+  max_active: 12
+  eval_every_s: 5
+  recurring_bottleneck_count: 3   # >= this many per hour = recurring
+  anomaly_z: 3.0
+  anomaly_min_ratio: 2.0
+  anomaly_min_occupancy: 4
+  long_stationary_s: 120
+  store_open_hours: 12            # for scaling what-if estimates to "per day"
+  promo_stopping_power_prior: 0.15
+briefing:
+  llm_model: claude-sonnet-5-5
+  enabled_if_key: true
+  max_tokens: 600
+privacy:
+  blur_heads: true
+  head_fraction: 0.22
+  store_frames: evidence_only     # none | evidence_only
+storage:
+  track_point_hz: 2               # downsample stored trajectories
+  flush_every_s: 1.0
+render:
+  trail_s: 3.0
+  floor_px_per_m: 50
+  jpeg_quality: 80
+sim:
+  dt: 0.1
+  duration_s: 1800
+  noise_sigma_m: 0.15
+  dropout_prob: 0.02
+  id_break_rate_per_s: 0.01
+  id_break_gap_s: [0.3, 1.5]
+api:
+  live_push_ms: 500
+  cors_origins: ["http://localhost:5173", "http://127.0.0.1:5173"]

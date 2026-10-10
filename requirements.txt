@@ -1,0 +1,22 @@
+# torch / torchvision are installed by `make setup` from the CUDA or CPU wheel index (tested: torch==2.14.1+cu126, torchvision==0.29.1+cu126)
+ultralytics==8.4.175
+opencv-python==5.0.0.93
+supervision==0.30.9
+numpy==2.4.6
+scipy==1.17.1
+shapely==2.2.0
+duckdb==1.5.6
+pyarrow==26.0.0
+pandas==3.0.6
+fastapi==0.143.0
+uvicorn[standard]==0.54.0
+pydantic==2.14.0
+PyYAML==6.0.3
+typer==0.27.3
+pytest==9.1.1
+httpx==0.28.1
+anthropic==1.13.0
+lap==0.5.13
+Jinja2==3.1.6
+python-multipart==0.0.32
+websockets==17.2

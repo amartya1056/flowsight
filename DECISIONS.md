@@ -1,0 +1,28 @@
+# Decisions log (one line each)
+
+- Repo lives in `flowsight/` inside the working folder; `git init` there.
+- No `make` on this Windows box → `Makefile` targets delegate to `scripts/tasks.py`, runnable directly (`python scripts/tasks.py demo`).
+- The venv is placed at `~/.venvs/flowsight` when the repo sits in OneDrive/Dropbox/iCloud (multi-GB torch installs break under sync); `.venv` otherwise; override with `FLOWSIGHT_VENV`.
+- Torch is installed from the CUDA 12.6 wheel index when `nvidia-smi` exists, CPU index otherwise (it is not in `requirements.txt`, because its index URL differs by platform).
+- PyPI was ~80 KB/s from this network, so dependency install took ~45 min; no functional impact.
+- The task-list tool was not available in this session; progress is tracked by per-phase git commits instead.
+- Data: CAVIAR corridor clips (4) + MOT17-09 / MOT20-01 raw videos download fine; the CAVIAR clips are concatenated into `data/videos/caviar_corridor.mp4` (202 s).
+- CAVIAR MPEG reports a bogus duration/50 fps; clips are re-encoded to 25 fps H.264.
+- CAVIAR calibration is hand-estimated from person heights and floor edges, and is marked `approximate: true` in `config/stores/caviar_corridor.yaml`.
+- Analytics glue lives in `flowsight/analytics/hub.py` (not in the original layout): one source-agnostic hub, fed identically by video and the simulator.
+- Store-specific simulator layout (waypoint graph, attractiveness, dwell, checkout, scenarios) is stored under `sim:` in the store YAML, not in code.
+- The ENTERING state also tolerates short excursions (within `exit_grace_s`); otherwise boundary jitter would produce zero visits rather than one.
+- A visit's engaged time is capped at its dwell time.
+- Dead/ignored/hot classification only applies to merchandisable zones (aisle/promo/service); walkways, entrances and checkouts always get high exposure and would skew the median.
+- UNVISITED needs median exposure ≥ `min_exposures`, and IGNORED/HOT need the zone's own exposures ≥ `min_exposures` (15), so nothing is flagged on the first minutes of data.
+- Flow sequences exclude walkway zones (transit, not destinations); the Sankey is step-layered ("Zone · k") so it is always acyclic, as ECharts requires.
+- Bottleneck time lost = Σ dt·max(0, 1 − v/v_free) over people in the zone (equivalent to actual − free-flow traversal time).
+- Free-flow baseline = p75 of individual speeds in LoS A/B windows; `default_free_flow_mps` (1.1) is used until 50 samples exist.
+- Queue length L counts people in the checkout zone slower than the engaged threshold (queueing + being served), so W = L/λ is time-in-checkout-zone.
+- Insight priority = severity_weight × confidence × (1 + ln(1 + people)); a log instead of a raw multiplier stops "212 exposures" from dwarfing an 11-person jam.
+- Insights over the `max_active` cap are marked `suppressed` and put on cooldown.
+- What-if range: low = exposure(B) × min(prior, sp_B) − stops(A); high = exposure(B) × max(prior, sp_B) − stops(A); scaled to a 12 h day; always labelled "estimate".
+- Stored trajectories are downsampled to 2 Hz (`storage.track_point_hz`), while analytics run at the full 10 Hz.
+- The evaluation uses ground truth = the same metric definitions on perfect simulator data (true positions, speeds and IDs), against a measured path with noise, dropouts and ID breaks through the real TrackStore; zone classification is scored against scenario intent.
+- `kalman` smoothing is accepted in config but falls back to EMA (EMA met the accuracy targets).
+- `make demo` starts the real clip only when YOLO weights are already cached under `models/`; the simulator runs fully offline regardless.
