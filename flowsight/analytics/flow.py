@@ -72,7 +72,7 @@ class FlowAnalyzer:
                           for p, c in paths.most_common(top_n)],
             "entrance_visitors": len(entr),
             "converted": len(conv),
-            "conversion": (len(conv) / len(entr)) if entr else None,
+            "conversion": (len(conv) / len(entr)) if entr and "checkout" in self.zone_type.values() else None,
             "avg_path_length_m": (sum(lens) / len(lens)) if lens else 0.0,
             "avg_time_in_store_s": (sum(times) / len(times)) if times else 0.0,
             "tracks": len(self.track_first),

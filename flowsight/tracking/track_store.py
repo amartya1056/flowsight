@@ -55,7 +55,8 @@ class Track:
 
 
 class TrackStore:
-    def __init__(self, cfg: TrackingCfg, max_stitch_dist: float | None = None, id_offset: int = 0):
+    def __init__(self, cfg: TrackingCfg, max_stitch_dist: float | None = None, id_offset: int = 0,
+                 metric: bool = True):
         self.cfg = cfg
         self.alpha = cfg.ema_alpha
         self.max_dist = cfg.stitch_max_dist_m if max_stitch_dist is None else max_stitch_dist
@@ -65,6 +66,12 @@ class TrackStore:
         self.n_stitches = 0
         self.n_tracks_created = 0
         self._expired: list[Track] = []
+        # |v| from noisy positions is biased upwards (a standing person "moves" ~0.13 m/s). Noise of the EMA-smoothed
+        # position per axis: s = sigma*sqrt(a/(2-a)); displacement over the speed window ~ sqrt(2)*s; per-axis speed
+        # noise sv = sqrt(2)*s/window, so E|v_noise|^2 = 2*sv^2. We subtract that energy (scale is metres only).
+        s = cfg.position_noise_m * math.sqrt(self.alpha / (2 - self.alpha))
+        sv = math.sqrt(2) * s / max(cfg.speed_window_s, 1e-3)
+        self._noise_v2 = 2 * sv * sv if metric else 0.0
 
     # ------------------------------------------------------------------ main API
     def update(self, ts: float, observations: list[tuple]) -> list[TrackState]:
@@ -169,7 +176,8 @@ class TrackStore:
         dt = ts - ref[0]
         if dt > 1e-6:
             tr.vx, tr.vy = (nsx - ref[1]) / dt, (nsy - ref[2]) / dt
-            tr.speed = math.hypot(tr.vx, tr.vy)
+            raw2 = tr.vx * tr.vx + tr.vy * tr.vy
+            tr.speed = math.sqrt(max(0.0, raw2 - self._noise_v2))  # de-biased speed magnitude
             if tr.speed > 1e-3:
                 tr.heading = math.atan2(tr.vy, tr.vx)
         return self._state(tr, trunc)

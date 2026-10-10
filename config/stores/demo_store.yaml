@@ -24,7 +24,7 @@ zones:
   - { id: z_aisle5,    name: Aisle 5 Dairy,        type: aisle,    polygon: [[3.0, 7.5], [5.0, 7.5], [5.0, 11.5], [3.0, 11.5]] }
   - { id: z_aisle6,    name: Aisle 6 Household,    type: aisle,    polygon: [[6.5, 7.5], [8.5, 7.5], [8.5, 11.5], [6.5, 11.5]] }
   - { id: z_pharmacy,  name: Pharmacy Counter,     type: service,  polygon: [[10.0, 8.8], [12.5, 8.8], [12.5, 11.5], [10.0, 11.5]] }
-  - { id: z_aisle7,    name: Aisle 7 Pet Care,     type: aisle,    polygon: [[13.6, 9.6], [16.0, 9.6], [16.0, 11.6], [13.6, 11.6]] }
+  - { id: z_aisle7,    name: Aisle 7 Pet Care,     type: aisle,    polygon: [[14.2, 9.6], [16.6, 9.6], [16.6, 11.6], [14.2, 11.6]] }
   - { id: z_checkout,  name: Checkout,             type: checkout, polygon: [[15.5, 4.5], [19.5, 4.5], [19.5, 7.5], [15.5, 7.5]], overflow: [z_walk_east] }
 # Static fixtures drawn on the floor plan (not analytics zones)
 fixtures:
@@ -37,7 +37,7 @@ fixtures:
   - { name: Shelf, rect: [5.1, 7.5, 1.3, 4.0] }
   - { name: Shelf, rect: [8.6, 7.5, 1.3, 4.0] }
   - { name: Counter, rect: [10.0, 11.5, 2.5, 0.4] }
-  - { name: Shelf, rect: [13.6, 11.6, 2.4, 0.3] }
+  - { name: Shelf, rect: [14.2, 11.6, 2.4, 0.3] }
   - { name: Till, rect: [19.0, 5.5, 0.6, 1.0] }
 doors:
   - { name: Entrance, at: [0.0, 6.0] }
@@ -67,7 +67,7 @@ sim:
     A5: {at: [4.0, 9.5]}
     A6: {at: [7.5, 9.5]}
     PH: {at: [11.25, 9.7]}
-    A7: {at: [14.8, 10.6]}
+    A7: {at: [15.4, 10.6]}
     X1: {at: [18.4, 9.0]}
     X:  {at: [19.7, 11.2]}
   edges: [[E, W1], [W1, W2], [W2, W3], [W3, W4], [W4, W5], [W1, A1], [W2, A2], [W3, P1], [W4, A3], [W5, EL],
@@ -81,7 +81,7 @@ sim:
     z_aisle5:   {node: A5, attract: 0.50, dwell_median_s: 30, dwell_sigma: 0.5}
     z_aisle6:   {node: A6, attract: 0.30, dwell_median_s: 25, dwell_sigma: 0.5}
     z_pharmacy: {node: PH, attract: 0.35, dwell_median_s: 50, dwell_sigma: 0.5}
-    z_aisle7:   {node: A7, attract: 0.35, dwell_median_s: 30, dwell_sigma: 0.5}
+    z_aisle7:   {node: A7, attract: 0.45, dwell_median_s: 30, dwell_sigma: 0.5}
   checkout:
     access_node: W5
     server_at: [18.6, 6.0]

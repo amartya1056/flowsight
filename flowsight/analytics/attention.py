@@ -1,10 +1,12 @@
 """Attention funnel & dead-zone classification — the key differentiator.
 
-Funnel per zone over a rolling window:  exposures -> entries -> stops -> engaged dwell.
+Funnel per zone over a rolling window, counted in UNIQUE SHOPPERS (tracks):  exposures -> entries -> stops.
   * exposure  = a track passed through the zone or its exposure buffer (could have seen it)
-  * entry     = a confirmed visit to the zone
-  * stop      = a visit with >= stop_min_s of engaged (slow) time
-  * stopping power = stops / exposures
+  * entry     = a track with a confirmed visit to the zone
+  * stop      = a track with a visit of >= stop_min_s engaged (slow) time
+  * stopping power = stopping shoppers / exposed shoppers
+Counting shoppers rather than passes keeps zones next to busy walkways (passed 4-9x per shopper at peak) comparable
+with destination zones off the main path.
 
 Classification (merchandisable zones only: aisle / promo / service):
   * UNVISITED — exposure < unvisited_traffic_share x median exposure: nobody even walks past.
@@ -31,17 +33,24 @@ class AttentionAnalyzer:
         t0 = now - window_s
         res = {z.id: {"zone_id": z.id, "exposures": 0, "entries": 0, "stops": 0, "engaged_s": 0.0}
                for z in self.zones}
-        for t, _tid, zid in exposures:
+        exp_ids = {z.id: set() for z in self.zones}
+        ent_ids = {z.id: set() for z in self.zones}
+        stop_ids = {z.id: set() for z in self.zones}
+        for t, tid, zid in exposures:
             if t >= t0:
-                res[zid]["exposures"] += 1
-        for t, _tid, zid in entries:
+                exp_ids[zid].add(tid)
+        for t, tid, zid in entries:
             if t >= t0:
-                res[zid]["entries"] += 1
+                ent_ids[zid].add(tid)
         for v in list(visits) + list(open_visits):
             if v.t_enter >= t0:
-                r = res[v.zone_id]
-                r["stops"] += int(v.is_stop)
-                r["engaged_s"] += v.engaged_s
+                res[v.zone_id]["engaged_s"] += v.engaged_s
+                if v.is_stop:
+                    stop_ids[v.zone_id].add(v.track_id)
+        for zid, r in res.items():
+            r["exposures"] = len(exp_ids[zid] | ent_ids[zid])
+            r["entries"] = len(ent_ids[zid])
+            r["stops"] = len(stop_ids[zid])
 
         for r in res.values():
             e = r["exposures"]

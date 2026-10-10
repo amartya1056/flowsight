@@ -102,6 +102,7 @@ class DensityAnalyzer:
         self.cand_start: dict[str, float | None] = {z: None for z in self.ids}
         self.cand_acc: dict[str, Bottleneck | None] = {z: None for z in self.ids}
         self.active: dict[str, Bottleneck | None] = {z: None for z in self.ids}
+        self.clear_count: dict[str, int] = {z: 0 for z in self.ids}
         self.bottlenecks: list[Bottleneck] = []
         self.windows: list[ZoneWindow] = []
         self.latest: dict[str, ZoneWindow] = {}
@@ -166,14 +167,22 @@ class DensityAnalyzer:
             return False, ""
         if los_rank(win.los) >= los_rank("D"):
             return True, f"density LoS {win.los}"
+        crowded_enough = (self.ztype[zid] != "aisle"  # in aisles, slow alone is just browsing
+                          or los_rank(win.los) >= los_rank(self.cfg.aisle_speed_rule_min_los))
         if (win.mean_speed is not None and win.occupancy >= self.cfg.min_occupancy_for_speed_rule
-                and win.mean_speed < self.cfg.speed_drop_ratio * self.free_flow[zid]):
+                and crowded_enough and win.mean_speed < self.cfg.speed_drop_ratio * self.free_flow[zid]):
             return True, f"speed {win.mean_speed:.2f} m/s vs free-flow {self.free_flow[zid]:.2f}"
         return False, ""
 
     def _bottleneck_step(self, zid: str, win: ZoneWindow, a: _Acc) -> None:
         cond, reason = self._condition(zid, win)
+        if not cond and self.active[zid] is not None:
+            # hysteresis: an active bottleneck ends only after N consecutive clear windows
+            self.clear_count[zid] += 1
+            if self.clear_count[zid] < self.cfg.bottleneck_end_windows:
+                return
         if cond:
+            self.clear_count[zid] = 0
             if self.cand_start[zid] is None:
                 self.cand_start[zid] = win.window_start
                 self.cand_acc[zid] = Bottleneck(zid, win.window_start, t_confirmed=-1.0)
@@ -195,7 +204,8 @@ class DensityAnalyzer:
         else:
             b = self.active[zid]
             if b is not None:
-                b.t_end = win.window_start
+                b.t_end = win.window_end - self.clear_count[zid] * self.cfg.window_s
+                self.clear_count[zid] = 0
                 if self.on_bottleneck:
                     self.on_bottleneck("end", b)
             self.active[zid] = None

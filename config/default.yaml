@@ -17,6 +17,7 @@ tracking:
   smoothing: ema                  # ema | kalman (kalman not implemented -> falls back to ema)
   ema_alpha: 0.4
   speed_window_s: 1.0             # speed = displacement of smoothed position over this window
+  position_noise_m: 0.15          # expected per-frame position noise; used to de-bias speed magnitude
   min_track_age_s: 1.0            # ignore tracks shorter than this
   stitch_max_gap_s: 2.0           # re-link fragmented tracks
   stitch_max_dist_m: 1.2
@@ -37,6 +38,8 @@ density:
   min_baseline_samples: 50
   fruin_los_m2_per_person: {A: 3.3, B: 2.3, C: 1.4, D: 0.9, E: 0.5}   # F below E
   bottleneck_zone_types: [walkway, entrance, aisle]
+  aisle_speed_rule_min_los: C       # in aisles slow = browsing; speed rule also needs crowding
+  bottleneck_end_windows: 2         # condition must be clear this many windows to end (no fragmenting)
 attention:
   window_min: 15
   unvisited_traffic_share: 0.2    # < 20% of median zone exposure

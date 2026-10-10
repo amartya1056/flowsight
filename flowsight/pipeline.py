@@ -93,8 +93,7 @@ class Pipeline:
             self.det = DetectorTracker(cfg.runtime, model_name=model_name)
             self.device, self.model = self.det.device, self.det.model_name
             self.foot = FootpointEstimator()
-            max_d = cfg.tracking.stitch_max_dist_m if self.calibrated else cfg.tracking.stitch_max_dist_m
-            self.tracks = TrackStore(cfg.tracking, max_stitch_dist=max_d)
+            self.tracks = TrackStore(cfg.tracking, metric=True)  # both Homography and AutoScale output metres
             self.renderer = Renderer(store, cfg, self.mapping, self.floorplan)
         if self.db is not None:
             self.db.add("runs", {"run_id": self.run_id, "store_id": store.store_id, "source": source,

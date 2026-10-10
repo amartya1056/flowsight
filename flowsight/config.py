@@ -45,6 +45,7 @@ class TrackingCfg(BaseModel):
     smoothing: str = "ema"
     ema_alpha: float = 0.4
     speed_window_s: float = 1.0
+    position_noise_m: float = 0.15
     min_track_age_s: float = 1.0
     stitch_max_gap_s: float = 2.0
     stitch_max_dist_m: float = 1.2
@@ -70,6 +71,8 @@ class DensityCfg(BaseModel):
     fruin_los_m2_per_person: dict[str, float] = Field(
         default_factory=lambda: {"A": 3.3, "B": 2.3, "C": 1.4, "D": 0.9, "E": 0.5})
     bottleneck_zone_types: list[str] = Field(default_factory=lambda: ["walkway", "entrance", "aisle"])
+    aisle_speed_rule_min_los: str = "C"
+    bottleneck_end_windows: int = 2
 
 
 class AttentionCfg(BaseModel):
