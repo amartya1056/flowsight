@@ -79,6 +79,7 @@ def concat(parts: list[Path], dst: Path) -> bool:
 
 
 def main() -> int:
+    caviar_only = "--caviar-only" in sys.argv  # hosted deployments: skip the MOT benchmark clips
     VIDEOS.mkdir(parents=True, exist_ok=True)
     got = []
     print("[1/3] CAVIAR shopping-centre corridor clips")
@@ -110,8 +111,8 @@ def main() -> int:
         if all(p.exists() for p in src) and concat(src, VIDEOS / out):
             got.append(out)
 
-    print("[2/3] MOT sequences")
-    for name, url in MOT.items():
+    print("[2/3] MOT sequences" + (" (skipped)" if caviar_only else ""))
+    for name, url in ({} if caviar_only else MOT).items():
         src = RAW / name
         if fetch(url, src, timeout=120):
             mp4 = VIDEOS / name.replace(".webm", ".mp4")

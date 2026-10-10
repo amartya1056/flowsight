@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { api, type Insight, type Kpis, type LivePayload, type LiveZone, type LoS, type Person } from './api'
 import { useApp } from './store'
-import { STATIC, staticTimeline } from './static'
+import { STATIC, staticTimeline, wsUrl } from './static'
 
 /** One WebSocket per selected run; pushes live state (people, zones, KPIs, insight deltas) into the store.
  *  In the static (GitHub Pages) build, the run's recorded timeline is replayed in a loop instead. */
@@ -22,8 +22,7 @@ export function useLiveRun(runId: string | null) {
     let retry: number | undefined
     api.insights(runId, 'all').then(seedInsights).catch(() => {})
     const connect = () => {
-      const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-      ws = new WebSocket(`${proto}://${location.host}/api/runs/${runId}/live`)
+      ws = new WebSocket(wsUrl(`/api/runs/${runId}/live`))
       ws.onopen = () => setConnected(true)
       ws.onmessage = (e) => {
         const p = JSON.parse(e.data) as LivePayload

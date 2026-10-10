@@ -5,9 +5,19 @@
  */
 export const STATIC = import.meta.env.VITE_STATIC === '1'
 const D = `${import.meta.env.BASE_URL}demo-data`
+/** Backend origin when the console is hosted separately (e.g. Vercel -> Hugging Face Space). Empty = same origin. */
+export const API_BASE: string = (import.meta.env.VITE_API_BASE ?? '').replace(/\/$/, '')
+
+/** WebSocket URL for an API path, honouring API_BASE. */
+export function wsUrl(path: string): string {
+  if (API_BASE) return API_BASE.replace(/^http/, 'ws') + path
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+  return `${proto}://${location.host}${path}`
+}
 
 export function u(url: string): string {
-  if (!STATIC || !url.startsWith('/api/')) return url
+  if (!url.startsWith('/api/')) return url
+  if (!STATIC) return API_BASE + url
   const [path, query = ''] = url.split('?')
   const q = new URLSearchParams(query)
   const p = path.replace(/^\/api\//, '').split('/')

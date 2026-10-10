@@ -1,13 +1,13 @@
-# FlowSight — Retail Dwell-Time & Bottleneck Intelligence
+# FlowSight: Retail Dwell-Time & Bottleneck Intelligence
 
 ### 🔗 [Live demo](https://amartya1056.github.io/flowsight/) · [Source code](https://github.com/amartya1056/flowsight)
 
-> **Live demo:** **https://amartya1056.github.io/flowsight/** — the full Store Ops Console replaying recorded FlowSight runs
+> **Live demo:** **https://amartya1056.github.io/flowsight/**: the full Store Ops Console replaying recorded FlowSight runs
 > (rush hour, ignored promo, staff filtering, real CAVIAR CCTV, two-camera fusion) in your browser. See
 > [§2.1](#21-the-live-demo-github-pages) for what the hosted demo can and can't do.
 > **Repository:** https://github.com/amartya1056/flowsight
 
-> **Everseen × E-Cell IIT Bombay Computer Vision AI Hackathon — Problem Statement 3**
+> **Everseen × E-Cell IIT Bombay Computer Vision AI Hackathon: Problem Statement 3**
 > *"Design and build an intelligent computer vision solution that processes standard in-store camera feeds to map customer journeys, generate real-time foot-traffic heat maps, calculate precise section-by-section dwell times, and automatically flag layout bottlenecks or dead zones."*
 
 **FlowSight turns the CCTV a store already has into a prioritised list of things to do *right now*.** It detects and
@@ -16,9 +16,9 @@ anonymous floor trajectories it measures section dwell, attention funnels, crowd
 checkout queues (Little's law) and customer journeys, then turns the numbers into actions with an owner, a deadline,
 evidence and an expected impact:
 
-> 🔴 **CRITICAL · now · floor staff** — *Clear Main Walkway @ Aisle 3 — density LoS E for 4m35s, 56 shoppers slowed, 1157 s lost.*
-> 🟠 **HIGH · now · floor staff** — *Open another checkout lane — predicted wait 2m37s (3.2× normal), queue spills 5 people into the walkway, 10 in queue.*
-> 🟡 **MEDIUM · this week · merchandising** — *What-if: moving the promo from Promo End-cap to Aisle 3 Snacks (stopping power 76%) ≈ +805 engaged visits/day (range 266–1344, estimate).*
+> 🔴 **CRITICAL · now · floor staff**: *Clear Main Walkway @ Aisle 3: density LoS E for 4m35s, 56 shoppers slowed, 1157 s lost.*
+> 🟠 **HIGH · now · floor staff**: *Open another checkout lane: predicted wait 2m37s (3.2× normal), queue spills 5 people into the walkway, 10 in queue.*
+> 🟡 **MEDIUM · this week · merchandising**: *What-if: moving the promo from Promo End-cap to Aisle 3 Snacks (stopping power 76%) ≈ +805 engaged visits/day (range 266-1344, estimate).*
 
 Every metric is **validated against a simulator with ground truth** (dwell error 0.24 s, visit F1 0.95, zone
 classification 100 %), the tracker is scored on real annotated CCTV (MOTA 0.70), and it runs at 73 FPS on a laptop GPU
@@ -31,18 +31,18 @@ or 24.6 FPS on a CPU alone.
 ## Table of contents
 
 1. [Why FlowSight is different](#1-why-flowsight-is-different)
-2. [Quick start — live demo & localhost](#2-quick-start--run-it-on-localhost)
+2. [Quick start: live demo & localhost](#2-quick-start-run-it-on-localhost)
 3. [Tour of the Store Ops Console (every page)](#3-tour-of-the-store-ops-console)
    - [3.1 Top bar: stores, sources, runs](#31-top-bar-stores-sources-runs)
-   - [3.2 Live Ops — the action feed](#32-live-ops--the-action-feed)
-   - [3.3 Floor Plan — live positions & heatmaps](#33-floor-plan--live-positions--heatmaps)
-   - [3.4 Zones — dwell, funnels, timelines](#34-zones--dwell-funnels-timelines)
-   - [3.5 Journeys — customer paths](#35-journeys--customer-paths)
-   - [3.6 Layout Advisor — what-if & layout problems](#36-layout-advisor--what-if--layout-problems)
+   - [3.2 Live Ops: the action feed](#32-live-ops-the-action-feed)
+   - [3.3 Floor Plan: live positions & heatmaps](#33-floor-plan-live-positions--heatmaps)
+   - [3.4 Zones: dwell, funnels, timelines](#34-zones-dwell-funnels-timelines)
+   - [3.5 Journeys: customer paths](#35-journeys-customer-paths)
+   - [3.6 Layout Advisor: what-if & layout problems](#36-layout-advisor-what-if--layout-problems)
    - [3.7 Shift Briefing & printable daily report](#37-shift-briefing--printable-daily-report)
-   - [3.8 Setup — zone editor & camera calibration](#38-setup--zone-editor--camera-calibration)
+   - [3.8 Setup: zone editor & camera calibration](#38-setup-zone-editor--camera-calibration)
 4. [Computer-vision pipeline on real CCTV](#4-computer-vision-pipeline-on-real-cctv)
-5. [Analytics — exact definitions](#5-analytics--exact-definitions)
+5. [Analytics: exact definitions](#5-analytics-exact-definitions)
 6. [Action engine & shift briefing](#6-action-engine--shift-briefing)
 7. [Advanced features](#7-advanced-features)
    - [7.1 Multi-camera fusion with automatic calibration](#71-multi-camera-fusion-with-automatic-calibration)
@@ -71,15 +71,15 @@ Judges at Everseen have seen a hundred "YOLO + heatmap" demos. FlowSight is buil
 
 | | Typical "YOLO + heatmap" demo | FlowSight |
 |---|---|---|
-| **Units** | pixels | **metres on the floor plan** (camera→floor homography). Speeds in m/s, density in people/m², Fruin Level of Service A–F, path length in metres. Analytics never see pixels. |
+| **Units** | pixels | **metres on the floor plan** (camera→floor homography). Speeds in m/s, density in people/m², Fruin Level of Service A-F, path length in metres. Analytics never see pixels. |
 | **Correctness** | eyeballed | **measured against ground truth**: a shopper simulator with known truth (30 runs, noise + ID breaks injected) and CAVIAR's annotated real CCTV. |
-| **Output** | charts | **prioritised actions** — owner, horizon (now / today / this week), evidence, "× vs normal", expected impact, confidence; deduplicated, cooled-down, auto-resolving. |
+| **Output** | charts | **prioritised actions**: owner, horizon (now / today / this week), evidence, "× vs normal", expected impact, confidence; deduplicated, cooled-down, auto-resolving. |
 | **Insight** | "it's busy here" | separates **IGNORED** zones (people pass but don't stop → *merchandising* problem) from **UNVISITED** zones (nobody passes → *layout* problem) using an exposure → entry → stop funnel; estimates the uplift of moving a display (**what-if**). |
 | **Deployment** | GPU notebook | existing cameras, **privacy by design** (no faces, no identity), GPU or CPU-only (ONNX), multi-camera fusion with **self-calibration**, edge-to-cloud design that ships only anonymous aggregates. |
 
 ---
 
-## 2. Quick start — run it on localhost
+## 2. Quick start: run it on localhost
 
 ### 2.1 The live demo (GitHub Pages)
 
@@ -166,16 +166,16 @@ fed by one WebSocket per run (`useLiveRun`) plus React-Query REST calls. It has 
 
 | Control | What it does |
 |---|---|
-| **Store selector** | `Demo Supermarket (simulated)`, `Shopping Centre Corridor (CAVIAR, real CCTV)`, `Shopping Centre Corridor — 2 cameras (CAVIAR)`. |
+| **Store selector** | `Demo Supermarket (simulated)`, `Shopping Centre Corridor (CAVIAR, real CCTV)`, `Shopping Centre Corridor: 2 cameras (CAVIAR)`. |
 | **Source selector** | A real camera (`Camera · …`), **Multi-camera fusion** (stores with ≥ 2 calibrated cameras), or a simulator scenario (`baseline`, `rush hour`, `blocked aisle`, `ignored promo`, `dead aisle`, `with staff`). |
 | **Speed** | 1×, 2×, 4× or `max` (as fast as the hardware allows). |
 | **Start / Stop** | `POST /api/runs` / `DELETE /api/runs/{id}`. Each run writes its own DuckDB file under `runs/<run_id>/`. |
 | **Run selector** | Switch between live and finished runs; switching a run also switches the store context. |
 | **Status** | Live dot, simulated/video time (`t+19m23s`), progress %, a permanent **Privacy: anonymised** badge, wall clock. |
 
-### 3.2 Live Ops — the action feed
+### 3.2 Live Ops: the action feed
 
-![Live Ops — rush hour](docs/screenshots/live_ops_rush.png)
+![Live Ops: rush hour](docs/screenshots/live_ops_rush.png)
 
 **Left: the live view.** For the simulator this is a top-down render of the store. Each shopper is a dot (**teal** =
 walking, **amber** = stopped/browsing below 0.3 m/s) with a short trail and a live dwell label. Zones are tinted by
@@ -190,7 +190,7 @@ has spilled back along the whole main walkway and all three walkway segments are
 | Horizon chip | `NOW` | now / today / this week |
 | Owner chip | `FLOOR STAFF` | floor staff / store manager / merchandising / layout planning |
 | Ratio chip | `×3.2 VS NORMAL` | value vs the zone's own rolling baseline |
-| Action | *Open another checkout lane — predicted wait 2m37s …* | one imperative sentence carrying the evidence numbers |
+| Action | *Open another checkout lane: predicted wait 2m37s …* | one imperative sentence carrying the evidence numbers |
 | Impact | *Halving the queue cuts predicted wait to ≈1m19s for 10 waiting shoppers* | expected effect of acting |
 | Metrics | `peak los: E · peak density: 1.3 · people affected: 56` | the evidence |
 | Footer | `conf 95% · since 14m45s · at t+15m05s · Ack` | confidence, time window, creation time, acknowledge |
@@ -203,22 +203,22 @@ wait (Little's law), active bottlenecks (and episodes so far), entrance→checko
 live dwell (`#5 3s`), the floor zones projected back into the camera with their live occupancy, and the HUD (time,
 people, FPS, calibration status, privacy). **Every head is blurred** before the frame leaves the pipeline:
 
-![Live Ops — real CAVIAR camera](docs/screenshots/live_ops_camera.png)
+![Live Ops: real CAVIAR camera](docs/screenshots/live_ops_camera.png)
 
 **Multi-camera fusion** shows both cameras side by side, with the *same* global IDs across views, and the fused floor
 plan on the right (see [§7.1](#71-multi-camera-fusion-with-automatic-calibration)):
 
-![Live Ops — multi-camera fusion](docs/screenshots/live_ops_multicam.png)
+![Live Ops: multi-camera fusion](docs/screenshots/live_ops_multicam.png)
 
-### 3.3 Floor Plan — live positions & heatmaps
+### 3.3 Floor Plan: live positions & heatmaps
 
 ![Floor plan with occupancy heatmap](docs/screenshots/floor_occupancy.png)
 
 * Live shopper positions **in metres** on the floor plan; zones coloured by **Fruin Level of Service** (legend on the right).
-* **Occupancy heat** — person-seconds per 0.25 m cell (time-weighted, so it does not depend on frame rate).
-* **Stationary heat** — only time spent below 0.3 m/s: *where people actually stop*, not just where they walk.
-* **Heat window slider** — all time, or the last 5 / 15 / 30 / 60 minutes (one grid bucket per minute).
-* **"Now" table** — current occupancy and LoS of every zone.
+* **Occupancy heat**: person-seconds per 0.25 m cell (time-weighted, so it does not depend on frame rate).
+* **Stationary heat**: only time spent below 0.3 m/s: *where people actually stop*, not just where they walk.
+* **Heat window slider**: all time, or the last 5 / 15 / 30 / 60 minutes (one grid bucket per minute).
+* **"Now" table**: current occupancy and LoS of every zone.
 
 ![Floor plan with stationary heatmap](docs/screenshots/floor_stationary.png)
 
@@ -230,9 +230,9 @@ active bottleneck:
 The same page works for the real camera store. Its floor plan is the shopping-centre corridor (4.5 × 16 m), with the
 shop front on the left and the atrium railing on the right:
 
-![Floor plan — real corridor store](docs/screenshots/floor_camera_store.png)
+![Floor plan: real corridor store](docs/screenshots/floor_camera_store.png)
 
-### 3.4 Zones — dwell, funnels, timelines
+### 3.4 Zones: dwell, funnels, timelines
 
 ![Zones table](docs/screenshots/zones_table.png)
 
@@ -244,14 +244,14 @@ Clicking a row opens the **zone drawer** with:
 2. **Dwell-time distribution** of completed visits.
 3. **Occupancy timeline** with **bottleneck periods shaded red**.
 
-![Zone drawer — walkway during rush hour](docs/screenshots/zone_drawer.png)
+![Zone drawer: walkway during rush hour](docs/screenshots/zone_drawer.png)
 
 The funnel is what separates *merchandising* from *layout* problems. In the `ignored_promo` scenario the promo end-cap
 sits on the busiest path: 47 shoppers were exposed to it, **0 entered and 0 stopped**, so it is flagged **IGNORED**:
 
-![Zone drawer — ignored promo](docs/screenshots/zone_drawer_promo.png)
+![Zone drawer: ignored promo](docs/screenshots/zone_drawer_promo.png)
 
-### 3.5 Journeys — customer paths
+### 3.5 Journeys: customer paths
 
 ![Journeys](docs/screenshots/journeys.png)
 
@@ -260,9 +260,9 @@ sits on the busiest path: 47 shoppers were exposed to it, **0 entered and 0 stop
 * **Top-10 paths** with counts.
 * KPIs: entrance → checkout **conversion**, tracked journeys, average **path length in metres**, average time in store.
 
-### 3.6 Layout Advisor — what-if & layout problems
+### 3.6 Layout Advisor: what-if & layout problems
 
-![Layout Advisor — what-if](docs/screenshots/layout_whatif.png)
+![Layout Advisor: what-if](docs/screenshots/layout_whatif.png)
 
 * **What-if relocation:** for every IGNORED/UNVISITED promo and every HOT zone, the estimated gain from moving the
   display. *Expected engaged visits = exposure(new spot) × stopping power − what the current spot converts*, scaled to a
@@ -272,7 +272,7 @@ sits on the busiest path: 47 shoppers were exposed to it, **0 entered and 0 stop
 * **Ignored zones** (merchandising problem), **dead/unvisited zones** (layout problem) and **hot zones** (place promotions
   nearby). HOT requires top-decile stopping power *and* being on a busy path.
 
-![Layout Advisor — recurring bottlenecks](docs/screenshots/layout_bottlenecks.png)
+![Layout Advisor: recurring bottlenecks](docs/screenshots/layout_bottlenecks.png)
 
 ### 3.7 Shift Briefing & printable daily report
 
@@ -287,13 +287,13 @@ The chip at the top shows which mode produced the text. Buttons export the **dai
 print-ready) and a **zone CSV**.
 
 <details>
-<summary><b>Printable daily report (report.html) — click to expand</b></summary>
+<summary><b>Printable daily report (report.html): click to expand</b></summary>
 
 ![Daily report](docs/screenshots/report_html.png)
 
 </details>
 
-### 3.8 Setup — zone editor & camera calibration
+### 3.8 Setup: zone editor & camera calibration
 
 **Zone editor:** draw polygons on the floor plan in metres (snapping to 5 cm), drag vertices, rename, change the type
 (`entrance · aisle · promo · walkway · checkout · service`; the rules depend on the type), delete, and save straight to
@@ -350,7 +350,7 @@ or shown on the floor plan:
 
 ---
 
-## 5. Analytics — exact definitions
+## 5. Analytics: exact definitions
 
 All analytics consume **floor-coordinate track points with timestamps**, never pixels. That is why one analytics hub
 serves video, multi-camera and simulator runs, and why the simulator can validate it exactly.
@@ -388,15 +388,15 @@ Rules (each unit-tested) turn analytics state into candidate insights keyed by *
 
 | Rule | Trigger | Horizon / owner | Example action |
 |---|---|---|---|
-| Checkout queue | predicted wait > 180 s, or queue rising 3 windows in a row (L ≥ 2) | now · floor staff | *Open another checkout lane — predicted wait 2m37s (3.2× normal), queue spills 5 people into the walkway, 10 in queue.* |
-| Active bottleneck | bottleneck active in walkway/entrance (aisle = "check") | now · floor staff | *Clear Main Walkway East — density LoS D for 5m15s, 52 shoppers slowed, 1205 s lost.* |
-| Recurring bottleneck | ≥ 3 episodes in a zone within the last hour | this week · layout planning | *Widen or reposition the display obstructing Main Walkway East — recurs 5×/hr at peak.* |
+| Checkout queue | predicted wait > 180 s, or queue rising 3 windows in a row (L ≥ 2) | now · floor staff | *Open another checkout lane: predicted wait 2m37s (3.2× normal), queue spills 5 people into the walkway, 10 in queue.* |
+| Active bottleneck | bottleneck active in walkway/entrance (aisle = "check") | now · floor staff | *Clear Main Walkway East: density LoS D for 5m15s, 52 shoppers slowed, 1205 s lost.* |
+| Recurring bottleneck | ≥ 3 episodes in a zone within the last hour | this week · layout planning | *Widen or reposition the display obstructing Main Walkway East: recurs 5×/hr at peak.* |
 | Counter-flow conflict | sustained (≥ 60 s) or recurring two-way conflict | this week · layout planning | *Two-way conflict in Main Walkway @ Aisle 3: 50% of walkers move against the main flow at LoS D for 1m25s. Add one-way guidance or a centre divider.* |
 | Ignored zone | IGNORED status | today · merchandising | *Promo End-cap: 212 shoppers passed, only 3% stopped. Refresh signage / swap product.* |
 | Unvisited zone | UNVISITED status | this week · layout planning | *Aisle 7 receives 12% of median traffic. Add wayfinding or move a traffic-driver product there.* |
-| What-if | IGNORED/UNVISITED promo + HOT zone | this week · merchandising | *What-if: moving the promo to Aisle 3 Snacks (stopping power 76%) ≈ +805 engaged visits/day (range 266–1344, estimate).* |
-| Occupancy anomaly | 30 s-smoothed occupancy z > 3, ≥ 2× normal, ≥ 4 people | now · floor staff | *Unusual crowd at Electronics — 3.4× normal. Send a staff member.* |
-| Assist shopper | one shopper stationary > 120 s in a service/aisle zone | now · floor staff | *Shopper waiting at Pharmacy Counter for 2m10s — assist.* |
+| What-if | IGNORED/UNVISITED promo + HOT zone | this week · merchandising | *What-if: moving the promo to Aisle 3 Snacks (stopping power 76%) ≈ +805 engaged visits/day (range 266-1344, estimate).* |
+| Occupancy anomaly | 30 s-smoothed occupancy z > 3, ≥ 2× normal, ≥ 4 people | now · floor staff | *Unusual crowd at Electronics: 3.4× normal. Send a staff member.* |
+| Assist shopper | one shopper stationary > 120 s in a service/aisle zone | now · floor staff | *Shopper waiting at Pharmacy Counter for 2m10s: assist.* |
 
 **Engine behaviour**
 * **Dedup:** an active *(rule, zone)* is updated in place, never duplicated.
@@ -448,7 +448,7 @@ Details and the per-person validation table: [docs/multicam_autocalib.md](docs/m
 Employees would inflate dwell and visits, so FlowSight keeps them out of shopper analytics using two privacy-preserving
 cues:
 * **Long presence:** on the floor ≥ 30 min. *Presence lineage* carries a person's presence time across tracker breaks
-  (gap ≤ 30 s; distance gate = walking speed × gap, within 2.5–5 m; never at entrances), so a broken track does not
+  (gap ≤ 30 s; distance gate = walking speed × gap, within 2.5-5 m; never at entrances), so a broken track does not
   reset an employee's clock.
 * **Uniform colour** (optional): `staff_uniform_hsv` ranges. A track is staff when the mean fraction of torso pixels
   inside the range is ≥ 35 % over ≥ 10 observations. Only colour statistics of the torso are used, never faces.
@@ -456,9 +456,9 @@ cues:
 When a track is flagged, its visits, exposures, trajectory rows *and those of its earlier fragments* are purged
 retroactively. The KPI tile shows how many staff are excluded and how many visits were purged:
 
-![Staff filtering — with_staff scenario](docs/screenshots/live_ops_staff.png)
+![Staff filtering: with_staff scenario](docs/screenshots/live_ops_staff.png)
 
-In the `with_staff` simulation (2 employees restocking for 45 min), 4 of 5 seeds leave 0–1 staff visits in the
+In the `with_staff` simulation (2 employees restocking for 45 min), 4 of 5 seeds leave 0-1 staff visits in the
 analytics, and **no shopper is ever mis-flagged** in the baseline or rush-hour runs.
 
 ### 7.3 Counter-flow conflict detection
@@ -528,14 +528,14 @@ The measured path sees realistic tracker errors: **σ = 0.15 m position noise, 2
 Ground truth applies the same metric definitions to perfect data, so the comparison isolates measurement robustness.
 Zone classification is scored against the scenario's intent.
 
-`make eval` → [runs/eval/report.md](runs/eval/report.md) — 6 scenarios × 5 seeds × 30 sim-minutes (45 for `with_staff`):
+`make eval` → [runs/eval/report.md](runs/eval/report.md): 6 scenarios × 5 seeds × 30 sim-minutes (45 for `with_staff`):
 
 | Scenario | Visit F1 | Dwell MAE | BN recall (sustained ≥ 60 s) | BN recall (all) | BN precision | Zone classification | Queue-wait MAE |
 |---|---|---|---|---|---|---|---|
-| baseline | 0.966 | 0.21 s | – | 0.44 | 0.80 | 100 % | 7.9 s |
+| baseline | 0.966 | 0.21 s | n/a | 0.44 | 0.80 | 100 % | 7.9 s |
 | rush_hour | 0.928 | 0.32 s | **1.00** | 0.82 | 0.94 | 100 % | 10.8 s |
 | blocked_aisle | 0.936 | 0.28 s | **1.00** | 0.75 | 0.99 | 100 % | 12.9 s |
-| ignored_promo | 0.969 | 0.19 s | – | 0.72 | 0.50 | 100 % (promo → IGNORED) | 8.7 s |
+| ignored_promo | 0.969 | 0.19 s | n/a | 0.72 | 0.50 | 100 % (promo → IGNORED) | 8.7 s |
 | dead_aisle | 0.970 | 0.22 s | 1.00 | 0.60 | 0.60 | 100 % (aisle 7 → UNVISITED) | 8.6 s |
 | with_staff | 0.956 | 0.22 s | 1.00 | 0.53 | 0.78 | 100 % | 7.2 s |
 | **all** | **0.954** | **0.24 s** | **1.00** | 0.64 | 0.78 | **100 %** | 9.3 s |
@@ -545,7 +545,7 @@ Zone classification is scored against the scenario's intent.
 | Dwell MAE < 1.5 s | ✅ 0.24 s |
 | Visit F1 > 0.9 | ✅ 0.954 |
 | Ignored / unvisited zones correctly classified | ✅ 100 % of seeds |
-| Bottleneck recall ≥ 0.9 on rush_hour | ✅ 1.00 for sustained jams (≈ 4 s latency) · ❌ 0.82 when counting 20–40 s aisle crowds that sit exactly on the threshold |
+| Bottleneck recall ≥ 0.9 on rush_hour | ✅ 1.00 for sustained jams (≈ 4 s latency) · ❌ 0.82 when counting 20-40 s aisle crowds that sit exactly on the threshold |
 
 Track fragmentation is 1.07 stable IDs per true shopper; ~290 ID breaks per run are repaired by stitching.
 
@@ -741,7 +741,7 @@ make test
 ## 18. Limitations & roadmap
 
 **Limitations (measured, not hidden)**
-* Rush-hour bottleneck recall is 0.82 when 20–40 s aisle crowds sitting exactly on the threshold are counted (sustained jams: 1.00).
+* Rush-hour bottleneck recall is 0.82 when 20-40 s aisle crowds sitting exactly on the threshold are counted (sustained jams: 1.00).
 * The CAVIAR corridor calibration is approximate. The two CAVIAR views only overlap on a narrow strip, so most shoppers are seen by one camera at a time.
 * Staff filtering without a uniform cue can be fooled by tracker identity swaps in crowds (1 of 5 simulated seeds).
 * Engaged-time MAE is 2.1 s, because browsing at 0.35 m/s sits next to the 0.3 m/s threshold.
@@ -768,4 +768,4 @@ make test
 
 ---
 
-*FlowSight — from CCTV to actions. Built for the Everseen × E-Cell IIT Bombay CV AI Hackathon.*
+*FlowSight: from CCTV to actions. Built for the Everseen × E-Cell IIT Bombay CV AI Hackathon.*

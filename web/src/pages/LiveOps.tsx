@@ -3,7 +3,7 @@ import { api } from '../api'
 import { Empty, InsightCard, KpiStrip, NeedRun, Panel, useActiveInsights } from '../components/common'
 import { useApp } from '../store'
 import FloorCanvas from '../components/FloorCanvas'
-import { STATIC, staticVideo } from '../static'
+import { STATIC, staticVideo, u } from '../static'
 
 export default function LiveOps() {
   const { runId, kpis, finished, error, people, zones, storeId, setVideoClock } = useApp()
@@ -35,8 +35,8 @@ export default function LiveOps() {
                 <FloorCanvas store={store.data} people={people} live={zones} className="w-full" />
               ) : <Empty>Loading replay…</Empty>
             ) : (
-              <img key={runId} src={`/api/runs/${runId}/stream.mjpg`} alt="live annotated stream"
-                className="h-full w-full rounded object-contain [image-rendering:auto]" onError={(e) => { (e.target as HTMLImageElement).src = `/api/runs/${runId}/frame.jpg?${Date.now()}` }} />
+              <img key={runId} src={u(`/api/runs/${runId}/stream.mjpg`)} alt="live annotated stream"
+                className="h-full w-full rounded object-contain [image-rendering:auto]" onError={(e) => { (e.target as HTMLImageElement).src = u(`/api/runs/${runId}/frame.jpg`) + `?${Date.now()}` }} />
             )}
           </Panel>
           <Panel title={<span className="flex items-center gap-2">Action feed <span className="chip bg-signal/15 text-signal">{active.length} active</span></span>}

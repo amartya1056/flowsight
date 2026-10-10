@@ -34,8 +34,10 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 
 CFG = load_config()
 app = FastAPI(title="FlowSight API", version="0.1.0")
-app.add_middleware(CORSMiddleware, allow_origins=CFG.api.cors_origins or ["*"], allow_methods=["*"],
-                   allow_headers=["*"])
+# FLOWSIGHT_CORS_ORIGINS="*" or "https://a.vercel.app,https://b" overrides config (frontend hosted on another origin)
+_cors = os.environ.get("FLOWSIGHT_CORS_ORIGINS")
+app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in _cors.split(",")] if _cors else (CFG.api.cors_origins or ["*"]),
+                   allow_methods=["*"], allow_headers=["*"])
 
 
 class RunHandle:
