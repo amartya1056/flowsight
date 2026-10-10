@@ -131,3 +131,8 @@ def test_multicam_store_offers_fusion(client):
     assert stores["demo_store"]["multi"] is False
     r = client.post("/api/runs", json={"store_id": "demo_store", "source": "multi", "speed": "max"})
     assert r.status_code == 400
+
+
+def test_store_detail_keeps_camera_calibration(client):
+    cams = client.get("/api/stores/caviar_corridor").json()["cameras"]
+    assert cams[0]["calibration"]["image_points"] and cams[0]["available"] in (True, False)

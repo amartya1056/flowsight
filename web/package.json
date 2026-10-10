@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "screenshots": "node scripts/screenshots.mjs"
+    "screenshots": "node scripts/readme_shots.mjs live_ops_rush live_ops_camera live_ops_multicam live_ops_staff floor_occupancy floor_stationary floor_hover floor_camera_store zones_table zone_drawer zone_drawer_promo journeys layout_whatif layout_bottlenecks briefing setup_zones setup_calibration"
   },
   "dependencies": {
     "@tanstack/react-query": "5.62.0",

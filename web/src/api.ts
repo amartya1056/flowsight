@@ -20,6 +20,7 @@ export interface Kpis {
   avg_zone_dwell_s: number; avg_time_in_store_s: number; avg_path_length_m: number; checkout_wait_s: number | null
   checkout_queue: number | null; active_bottlenecks: number; bottlenecks_total: number; conversion: number | null
   visits_total: number; id_stitches?: number; proc_fps?: number
+  staff_on_floor?: number; staff_tracks?: number; staff_visits_purged?: number
 }
 export interface Person { id: number; x: number; y: number; speed: number; stationary_s: number }
 export interface LiveZone { id: string; occupancy: number; los: LoS; density: number; dwell_live: number; bottleneck: boolean; status: string }

@@ -176,7 +176,7 @@ function Calibration({ store }: { store: StoreDetail }) {
                 reprojection error: {res.reprojection_error.floor_m_mean.toFixed(3)} m mean · {res.reprojection_error.floor_m_max.toFixed(3)} m max ·{' '}
                 {res.reprojection_error.image_px_mean.toFixed(1)} px mean {res.saved && <span className="text-signal">· saved</span>}
               </div>
-              {res.preview && <><div className="text-[10px] font-semibold uppercase tracking-wider text-ink-400">Warped preview (camera → floor plan)</div><img src={res.preview} alt="warped preview" className="w-full rounded border border-ink-700" /></>}
+              {res.preview && <><div className="text-[10px] font-semibold uppercase tracking-wider text-ink-400">Warped preview (camera → floor plan)</div><img src={res.preview} alt="warped preview" style={{ maxHeight: 360 }} className="mx-auto block rounded border border-ink-700 object-contain" /></>}
             </div>
           )}
           {cam.approximate && <div className="text-xs text-sev-medium">Current calibration is marked approximate (hand-estimated for the public test clip).</div>}

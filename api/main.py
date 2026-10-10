@@ -125,7 +125,10 @@ def stores():
 def store_detail(store_id: str):
     st = _store_or_404(store_id)
     d = st.model_dump(exclude={"sim"})
+    full = {c["id"]: c for c in d["cameras"]}
     d.update(_store_summary(st))
+    for c in d["cameras"]:  # keep calibration / offsets alongside the summary fields
+        c.update({k: v for k, v in full.get(c["id"], {}).items() if k not in c})
     d["floorplan_url"] = f"/api/stores/{store_id}/floorplan.png"
     for c in d["cameras"]:
         c["frame_url"] = f"/api/stores/{store_id}/cameras/{c['id']}/frame.jpg"

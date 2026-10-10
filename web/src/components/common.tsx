@@ -37,7 +37,8 @@ export function KpiStrip({ k }: { k: Kpis | null }) {
   const wait = k?.checkout_wait_s
   return (
     <div className="grid grid-cols-5 gap-3">
-      <Stat label="People in store" value={k?.people_in_store ?? '–'} sub={k ? `peak ${k.peak_people} · ${k.visitors_total} tracked` : ''} />
+      <Stat label="People in store" value={k?.people_in_store ?? '–'}
+        sub={k ? `peak ${k.peak_people} · ${k.visitors_total} tracked` + (k.staff_tracks ? ` · ${k.staff_on_floor ?? 0} staff excluded (${k.staff_visits_purged ?? 0} visits purged)` : '') : ''} />
       <Stat label="Avg zone dwell" value={k ? fmtDur(k.avg_zone_dwell_s) : '–'} sub={k ? `${fmtDur(k.avg_time_in_store_s)} avg time in store` : ''} />
       <Stat label="Checkout wait" value={wait == null ? '–' : fmtDur(wait)} tone={wait != null && wait > 180 ? 'bad' : wait != null && wait > 120 ? 'warn' : undefined}
         sub={k?.checkout_queue != null ? `${k.checkout_queue} in queue now · Little's law` : 'no checkout in view'} />
