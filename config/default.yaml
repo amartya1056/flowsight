@@ -24,6 +24,8 @@ tracking:
   stitch_max_dist_px: 80          # used when running uncalibrated in pixel space
   staff_filter: true              # exclude likely staff from shopper analytics
   staff_long_presence_s: 1800     # on the floor longer than this = staff
+  presence_lineage_gap_s: 30      # presence time survives tracker breaks up to this gap ...
+  presence_lineage_dist_m: 2.5    # ... and distance (never at entrances), so fragments still add up
   staff_uniform_hsv: []           # optional uniform colours: list of [h_lo,h_hi,s_lo,s_hi,v_lo,v_hi] (OpenCV HSV)
   staff_color_min_frac: 0.35      # mean torso fraction inside a uniform range to call staff
   staff_color_min_samples: 10

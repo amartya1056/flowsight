@@ -36,4 +36,11 @@
 - Bottleneck action text says "flow slowed to X m/s" when the speed rule (not density) fired.
 - Screenshots: Playwright headless at 1600×1000; the Layout Advisor uses an `ignored_promo` run (it has a what-if) and Setup uses the CAVIAR store (it has a real camera to calibrate).
 - Not verified: a literal fresh-clone `make setup` (re-downloading ~3 GB over the ~80 KB/s PyPI link seen here). Every step it runs was executed individually; `make demo` was verified end to end (console plus both runs live within ~4 s of the server starting, offline).
-- STRETCH items (staff filtering, counter-flow, ONNX export, multi-camera, MOT metrics) were not done; they are listed in the README roadmap.
+- STRETCH items were done in a follow-up session (decisions below).
+- Staff: long presence uses *presence lineage* (gap ≤ 30 s, gate = walking speed × gap within [2.5, 5] m, never at entrances) so ID breaks don't reset an employee's clock; flagging purges the track and its lineage ancestors from visits/exposures and from DuckDB (closed density windows are not rewritten).
+- Staff: tracker identity swaps can still move an employee's presence onto a shopper's track (with_staff seed 3); documented rather than patched with appearance features (privacy).
+- Counter-flow: entropy alone can't gate (a clean two-way stream scores only ~0.33), so the conflict test is counter-flow ratio ≥ 0.3 at LoS ≥ C; aisles are excluded (dead-end aisles are two-way by nature); an insight fires only for sustained (≥ 60 s) or recurring (≥ 2/hr) conflicts.
+- ONNX: exported at static 640; the detector infers imgsz from the `_640.onnx` suffix. ONNX Runtime CPU (onnxruntime-gpu was skipped: ~200 MB over the slow PyPI link); OpenVINO/TensorRT not tested.
+- Multi-camera data: CAVIAR provides synchronised corridor + front views of the same scenes; both pair clips (ThreePastShop1, OneShopOneWait1) are concatenated per view.
+- Auto-calibration iterations: plain findHomography-RANSAC collapsed onto degenerate fits; then a guarded custom RANSAC still locked onto *stationary* people (they fit any clock offset). Final method = walking people only (≥ 0.4 m/s ref, ≥ 8 px/s new), truncated boxes repaired with the track's median height (the views overlap exactly where the corridor camera cuts people's feet off), LO-RANSAC, best of 3 seeds. Validated per person against GT trajectories of both views.
+- MOT: `motmetrics` 1.4's IoU helper uses `np.asfarray` (removed in NumPy 2), so a local 1−IoU distance is used; CAVIAR GT XMLs are downloaded by `download_data.py` (gitignored).

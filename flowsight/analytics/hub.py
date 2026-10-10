@@ -54,6 +54,9 @@ class AnalyticsHub:
         self.peak_people = 0
         self.extra: dict = {}  # pipeline-level counters (stitches, fps, ...)
         self.staff = StaffClassifier(cfg.tracking)
+        self.presence_start: dict[int, float] = {}
+        self.lineage_parent: dict[int, int] = {}
+        self._lost: deque = deque(maxlen=500)  # (last_ts, x, y, presence_start, was_staff) of expired tracks
         self.staff_on_floor = 0
         self.staff_visits_purged = 0
 
@@ -106,8 +109,11 @@ class AnalyticsHub:
         self.n_frames += 1
         mature = [t for t in tracks if t.mature]
         if self.cfg.tracking.staff_filter:
+            self._remember_lost(expired)
             for t in mature:
-                if self.staff.check_presence(t.id, t.age):
+                if t.id not in self.presence_start:
+                    self._adopt_lineage(t, ts)
+                if self.staff.check_presence(t.id, ts - self.presence_start[t.id]):
                     self.mark_staff(t.id)
             self.staff_on_floor = sum(1 for t in mature if self.staff.is_staff(t.id))
             mature = [t for t in mature if not self.staff.is_staff(t.id)]
@@ -172,9 +178,46 @@ class AnalyticsHub:
                                                          "stopping_power", "status")}}
                     for r in self.attention_latest.values()])
 
+    def _remember_lost(self, expired) -> None:
+        for tr in expired:
+            ps = self.presence_start.pop(tr.id, None)
+            if ps is not None and hasattr(tr, "sx"):
+                self._lost.append((tr.last_ts, tr.sx, tr.sy, ps, self.staff.is_staff(tr.id), tr.id))
+
+    def _adopt_lineage(self, t, ts: float) -> None:
+        """A new track that starts where another vanished moments ago (not at an entrance) continues its presence."""
+        tc = self.cfg.tracking
+        start = ts - t.age
+        in_entrance = any(self.ztype[z] == "entrance" for z in self.zones.zones_at(t.x, t.y))
+        best = None
+        if not in_entrance:
+            for i, (lt, x, y, ps, was_staff, _pid) in enumerate(self._lost):
+                gap = ts - lt  # the person keeps walking while untracked: allow ~walking speed x gap, capped
+                gate = min(max(tc.presence_lineage_dist_m, 1.4 * gap), 2 * tc.presence_lineage_dist_m)
+                if 0 <= start - lt <= tc.presence_lineage_gap_s and ((t.x - x) ** 2 + (t.y - y) ** 2) ** 0.5 <= gate:
+                    if best is None or lt > best[1][0]:
+                        best = (i, (lt, x, y, ps, was_staff, _pid))
+        if best is not None:
+            del self._lost[best[0]]
+            self.presence_start[t.id] = min(start, best[1][3])
+            self.lineage_parent[t.id] = best[1][5]
+            if best[1][4]:
+                self.staff.staff[t.id] = "lineage"
+                self.mark_staff(t.id)
+        else:
+            self.presence_start[t.id] = start
+
     def mark_staff(self, tid: int) -> None:
         """A track was identified as staff: purge it from shopper analytics retroactively."""
         self.staff_visits_purged += self.visits.purge_track(tid)
+        anc, seen = self.lineage_parent.get(tid), {tid}
+        while anc is not None and anc not in seen:  # earlier fragments of the same employee
+            seen.add(anc)
+            self.staff.staff.setdefault(anc, "lineage")
+            self.staff_visits_purged += self.visits.purge_track(anc)
+            if self.db is not None:
+                self.db.delete_track(anc)
+            anc = self.lineage_parent.get(anc)
         for d in (self.flow.track_first, self.flow.track_last, self.flow.track_len, self.trails,
                   self.stationary_since, self._last_pt):
             d.pop(tid, None)

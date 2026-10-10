@@ -80,6 +80,16 @@ def multicam(store: str = typer.Option("caviar_multicam"), cameras: str = typer.
     typer.echo(f"outputs in {run_dir}")
 
 
+@app.command()
+def mot():
+    """CLEAR-MOT / IDF1 on CAVIAR ground truth (ByteTrack vs FlowSight stable IDs) -> docs/tracking_metrics.md."""
+    from flowsight.eval.mot import run_all
+
+    res = run_all(load_config(), load_store("caviar_corridor"), ROOT, ROOT / "docs" / "tracking_metrics.md")
+    typer.echo(json.dumps({k: {lab: {m: round(v[lab][m], 3) for m in ("mota", "idf1", "num_switches")}
+                               for lab in ("ByteTrack", "FlowSight")} for k, v in res.items()}, indent=2))
+
+
 @app.command("eval")
 def eval_cmd(seeds: int = 5, duration: float = 1800.0, workers: int = 4,
              scenarios: str = "baseline,rush_hour,blocked_aisle,ignored_promo,dead_aisle"):

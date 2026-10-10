@@ -169,3 +169,17 @@ def test_fusion_keeps_people_apart_in_overlap():
     fuser, ts, ids = _two_cam_walk(np.random.default_rng(1), [(0.0, 3.0, 1.0), (20.0, 6.0, -1.0)])
     assert all(len(s) == 1 for s in ids) and ids[0] != ids[1]
     assert fuser.stats.summary()["handoffs"] == 2
+
+
+# ------------------------------------------------------------- MOT eval helpers
+def test_iou_distance_and_gt_parser(tmp_path):
+    from flowsight.eval.mot import iou_distance, load_gt_boxes
+
+    a = np.array([[0, 0, 10, 10]], float)
+    b = np.array([[0, 0, 10, 10], [5, 0, 10, 10], [50, 50, 5, 5]], float)
+    d = iou_distance(a, b)
+    assert d[0, 0] == 0 and np.isnan(d[0, 1]) and np.isnan(d[0, 2])  # IoU 1/3 < 0.5 -> no match
+    x = tmp_path / "gt.xml"
+    x.write_text('<dataset><frame number="3"><objectlist><object id="7"><box h="20" w="10" xc="50" yc="40"/>'
+                 '</object></objectlist></frame></dataset>')
+    assert load_gt_boxes(x) == {3: {7: (45.0, 30.0, 55.0, 50.0)}}

@@ -39,7 +39,7 @@ python -m flowsight.cli sim --scenario rush_hour --duration 1500        # simula
 python -m flowsight.cli eval --seeds 5 --duration 1800                  # accuracy report -> runs/eval/report.md
 python -m flowsight.cli calibrate --store <id> --camera <cam>           # click points -> homography
 python scripts/bench.py                                                 # -> docs/benchmarks.md
-make test                                                               # 35 tests
+make test                                                               # 46 tests
 ```
 
 Set `ANTHROPIC_API_KEY` to have the shift briefing written by Claude (model in `config/default.yaml`).
@@ -113,6 +113,29 @@ At 10 FPS analytics per camera, one RTX 4060 laptop handles ~7 cameras with sequ
 (per-call latency dominates; batched multi-camera inference raises this), and one CPU core runs the analytics
 for >100 cameras.
 
+## Stretch features
+
+| Feature | What it does | Result |
+|---|---|---|
+| **Staff filtering** | Employees are flagged by long presence (≥ 30 min; presence survives tracker breaks via *lineage*: ≤ 30 s gap, walking-speed gate, never at entrances) and/or an optional uniform-colour cue (HSV fraction of the torso; no faces). Flagging purges the employee's visits/exposures retroactively, including earlier fragments. | `with_staff` sim (2 employees, 45 min): 4 of 5 seeds leave 0–1 staff visits in the analytics; 0 shoppers ever mis-flagged in any baseline/rush run. Seed 3 leaks 127 visits through tracker **identity swaps** (see limitations). |
+| **Counter-flow conflict** | Per zone/window: 8-bin heading entropy + counter-flow ratio along the zone's long axis (0 = one-way, 0.5 = two-way). A conflict is ≥ 0.3 counter-flow at LoS ≥ C for ≥ 30 s in walkways/entrances; the layout insight fires only when sustained (≥ 60 s) or recurring (≥ 2/hr). | Unit-tested on synthetic two-way vs one-way streams; no false conflicts on the rush-hour simulation (its jams are queue/standing, not opposing streams). |
+| **ONNX export** | `scripts/export_onnx.py` exports YOLO11n/s; static-shape ONNX models drop into `runtime.model_cpu`. | CPU only: ONNX Runtime +4–8 % over PyTorch; **full pipeline on CPU with yolo11n ONNX: 24.6 FPS** (2.5× real time at 10 FPS). [docs/benchmarks.md](docs/benchmarks.md) |
+| **Multi-camera fusion** | Second camera **auto-calibrated** (clock offset + homography) from walking shoppers both cameras see: guarded LO-RANSAC over all cross-camera pairings. Then per-frame Hungarian association in floor metres, fused keys hand IDs over between views, and one global track store feeds the usual analytics. | Real CAVIAR corridor + front views: offset 70 frames (2.8 s), GT-validated trajectory agreement median ≈ 0.3 m; live fusion at 31.5 FPS for 2 cameras, 12 identities seen by both, 2 full hand-offs. [docs/multicam_autocalib.md](docs/multicam_autocalib.md) |
+| **MOT tracking metrics** | CLEAR-MOT/IDF1 on CAVIAR's annotated corridor sequences, raw ByteTrack IDs vs FlowSight stable IDs on the same boxes. | MOTA 0.70; ID stitching cuts **ID switches 39 → 27 (−31 %)** and raises IDF1 0.668 → 0.699. [docs/tracking_metrics.md](docs/tracking_metrics.md) |
+
+```bash
+python -m flowsight.cli multicam --store caviar_multicam     # 2-camera fused run
+```
+```bash
+python scripts/autocalibrate.py --store caviar_multicam --write   # re-derive cam2 calibration + clock offset
+```
+```bash
+python -m flowsight.cli mot                                  # tracking metrics on CAVIAR GT
+```
+```bash
+python scripts/export_onnx.py && python scripts/bench.py --onnx
+```
+
 ## Privacy
 
 * No face detection or recognition, no appearance embeddings, no identity. IDs are per-session integers.
@@ -131,16 +154,16 @@ for >100 cameras.
 ## Limitations
 
 * The CAVIAR calibration is approximate (no survey points). Metric accuracy on real video depends on calibration quality; reprojection error is shown in the Setup page.
-* Single-camera per run. Multi-camera fusion via shared floor coordinates is designed (ARCHITECTURE.md) but not implemented.
-* Staff are not filtered out yet (planned: long-presence + uniform-colour heuristic).
-* Accuracy numbers come from the simulator's noise model. Real tracker failure modes (occlusion swaps, crowd merges) are harsher; MOT-based tracking metrics are a stretch item.
+* Multi-camera fusion is position/time-only; the CAVIAR views overlap only on a narrow strip, so most shoppers are single-view, and cross-camera auto-calibration needs walking people in the overlap (standing people are filtered out on purpose).
+* Staff filtering without a uniform cue relies on presence; tracker **identity swaps** in crowds can move an employee's presence onto a shopper (seen in 1 of 5 sim seeds). Configure `staff_uniform_hsv` where staff wear uniforms.
+* Accuracy numbers come from the simulator's noise model; real tracker failure modes are harsher. The real-video tracking numbers are in docs/tracking_metrics.md (MOTA 0.70 on CAVIAR, dominated by tiny far-field people).
 * Short (20–40 s) bottlenecks at the threshold are detected ~80 % of the time.
 
 ## Roadmap
 
-1. Multi-camera fusion and cross-camera handoff by position/time gating.
-2. Staff filtering; counter-flow conflict detection (direction entropy).
-3. ONNX / OpenVINO / TensorRT export for low-cost edge boxes; batched multi-camera inference.
+1. Covariance-weighted fusion (cameras measure along/across directions with different precision) and >2 cameras.
+2. Batched multi-camera inference; OpenVINO / TensorRT on top of the ONNX export.
+3. Swap-robust staff filtering (combine presence with uniform cue and zone-of-work priors).
 4. Webhook / Slack / task-system connectors for the action feed; POS join for true conversion.
 5. Cross-store benchmarking and planogram-aware what-if.
 
@@ -152,6 +175,6 @@ api/         FastAPI app + printable report template
 web/         React + Vite + TypeScript + Tailwind + ECharts console (7 pages)
 config/      default.yaml (all thresholds) + stores/*.yaml (cameras, calibration, zones, sim layout)
 scripts/     download_data.py, bench.py, tasks.py (make targets)
-tests/       35 pytest tests (perception, geometry, analytics acceptance, action rules, API)
+tests/       46 pytest tests (perception, geometry, analytics acceptance, action rules, API, stretch features)
 docs/        screenshots, benchmarks, demo script
 ```

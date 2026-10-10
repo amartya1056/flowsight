@@ -25,6 +25,9 @@ VIDEOS = ROOT / "data" / "videos"
 RAW = ROOT / "data" / "raw"
 CAVIAR = "https://groups.inf.ed.ac.uk/vision/DATASETS/CAVIAR/CAVIARDATA2"
 CAVIAR_CLIPS = ["OneShopOneWait1cor", "ThreePastShop1cor", "TwoEnterShop1cor", "EnterExitCrossingPaths1cor"]
+CAVIAR_FRONT = ["ThreePastShop1front", "OneShopOneWait1front"]          # synchronised 2nd view (multi-camera)
+CAVIAR_GT = {"ThreePastShop1cor": "c3ps1gt.xml", "OneShopOneWait1cor": "cosow1gt.xml", "TwoEnterShop1cor": "c2es1gt.xml",
+             "ThreePastShop1front": "f3ps1gt.xml", "OneShopOneWait1front": "fosow1gt.xml"}
 MOT = {
     "mot17_09.webm": "https://motchallenge.net/sequenceVideos/MOT17-09-FRCNN-raw.webm",
     "mot20_01.webm": "https://motchallenge.net/sequenceVideos/MOT20-01-raw.webm",
@@ -92,6 +95,20 @@ def main() -> int:
         if concat(parts, combo):
             got.append(combo.name)
             print(f"  concatenated {len(parts)} clips -> {combo.name}")
+
+    print("[1b] CAVIAR front views + ground truth (multi-camera, tracking metrics)")
+    for clip in CAVIAR_FRONT:
+        mpg = RAW / f"{clip}.mpg"
+        if fetch(f"{CAVIAR}/{clip}/{clip}.mpg", mpg):
+            to_mp4(mpg, VIDEOS / f"caviar_{clip}.mp4")
+    for clip, xml in CAVIAR_GT.items():
+        fetch(f"{CAVIAR}/{clip}/{xml}", ROOT / "data" / "gt" / xml)
+    pair = {"caviar_pair_cor.mp4": ["ThreePastShop1cor", "OneShopOneWait1cor"],
+            "caviar_pair_front.mp4": ["ThreePastShop1front", "OneShopOneWait1front"]}
+    for out, clips in pair.items():
+        src = [VIDEOS / f"caviar_{c}.mp4" for c in clips]
+        if all(p.exists() for p in src) and concat(src, VIDEOS / out):
+            got.append(out)
 
     print("[2/3] MOT sequences")
     for name, url in MOT.items():

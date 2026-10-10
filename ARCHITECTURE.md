@@ -57,10 +57,15 @@ flowchart TB
   assist a shopper) fire locally with sub-second latency and keep working when the WAN is down.
 * **Cloud** only receives anonymous aggregates: zone-window KPIs, bottleneck episodes, attention funnels and
   insights. These are small (a few KB per zone per 5 minutes), so 10,000 stores remain cheap to ingest.
-* **Multi-camera fusion:** every camera projects into the same floor coordinate frame, so overlapping views
-  agree on positions. Handoff between cameras is position/time gating in metres: the same rule as the
-  single-camera ID stitcher (`stitch_max_dist_m`, `stitch_max_gap_s`), applied across cameras at overlaps.
-  No appearance features are needed (privacy).
+* **Multi-camera fusion (implemented, `flowsight/tracking/fusion.py`):** every camera projects into the same
+  floor frame; per frame, observations are Hungarian-matched across cameras within a 1 m gate, each cluster
+  carries a persistent *fused key* (that is the hand-off: camera B's tracker ID is bound to the key camera A's
+  track already holds), and fused observations feed one global TrackStore whose ID stitching also bridges short
+  gaps between non-overlapping views. No appearance features (privacy).
+* **Camera onboarding without a survey (`flowsight/geometry/autocalib.py`):** a new camera is calibrated from a few
+  minutes of normal traffic seen by an already-calibrated neighbour: clock offset + homography by guarded
+  LO-RANSAC over cross-camera pairings of *walking* people. Validated against CAVIAR ground truth
+  (docs/multicam_autocalib.md).
 * **Scalability:** the detector is the only GPU-bound stage. The analytics handle >100 people per frame at
   hundreds of FPS on one CPU core (`docs/benchmarks.md`), so one edge box covers a typical store. Models export
   to ONNX/OpenVINO/TensorRT for cheaper hardware.

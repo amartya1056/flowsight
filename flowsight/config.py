@@ -52,6 +52,8 @@ class TrackingCfg(BaseModel):
     stitch_max_dist_px: float = 80
     staff_filter: bool = True
     staff_long_presence_s: float = 1800
+    presence_lineage_gap_s: float = 30
+    presence_lineage_dist_m: float = 2.5
     staff_uniform_hsv: list[list[int]] = Field(default_factory=list)
     staff_color_min_frac: float = 0.35
     staff_color_min_samples: int = 10
